@@ -216,6 +216,31 @@ class TravelAdminController extends Controller
         ]);
     }
 
+    /**
+     * Hapus jadwal.
+     * DELETE /api/admin/travel/jadwal/{id}
+     */
+    public function jadwalDestroy(int $id): JsonResponse
+    {
+        $jadwal = Jadwal::findOrFail($id);
+
+        // Cek apakah ada booking yang confirmed
+        $confirmedCount = $jadwal->bookings()->where('status', 'confirmed')->count();
+        if ($confirmedCount > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "Tidak bisa menghapus jadwal yang memiliki {$confirmedCount} booking confirmed.",
+            ], 422);
+        }
+
+        $jadwal->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Jadwal '{$jadwal->kode_jadwal}' berhasil dihapus.",
+        ]);
+    }
+
     // ═════════════════════════════════════════════
     // VERIFIKASI DOKUMEN JAMAAH
     // ═════════════════════════════════════════════

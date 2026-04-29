@@ -62,54 +62,177 @@ function JamaahDashboard({ user, showToast }) {
 // ══════════════════════════════════════
 function PaketPanel({ showToast }) {
   const [paket, setPaket] = useState([]); const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(null); const [form, setForm] = useState({});
+  const [showForm, setShowForm] = useState(false); const [editId, setEditId] = useState(null);
+  const [form, setForm] = useState({});
+  const emptyForm = {nama_paket:'',kode_paket:'',tipe:'reguler',harga:'',dp_minimum:'',durasi_hari:9,maskapai:'',hotel_makkah:'',hotel_madinah:'',fasilitas:''};
+
   const load = async () => { setLoading(true); try { const p = await api.getAdminPaket(); setPaket(p.data||[]); } catch(e) { showToast('Gagal memuat paket','error'); } setLoading(false); };
   useEffect(() => { load(); }, []);
-  const handleCreate = async (e) => { e.preventDefault(); try { await api.createPaket({...form, fasilitas: form.fasilitas?.split(',').map(f=>f.trim()) || []}); showToast('Paket ditambahkan!'); setShowForm(null); load(); } catch(err) { showToast(err.message||'Gagal','error'); } };
+
+  const openAdd = () => { setEditId(null); setForm({...emptyForm}); setShowForm(true); };
+  const openEdit = (p) => {
+    setEditId(p.id);
+    setForm({
+      kode_paket: p.kode_paket||'', nama_paket: p.nama_paket||'', tipe: p.tipe||'reguler',
+      harga: p.harga||'', dp_minimum: p.dp_minimum||'', durasi_hari: p.durasi_hari||9,
+      maskapai: p.maskapai||'', hotel_makkah: p.hotel_makkah||'', hotel_madinah: p.hotel_madinah||'',
+      fasilitas: Array.isArray(p.fasilitas) ? p.fasilitas.join(', ') : (p.fasilitas||''),
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const payload = {...form, fasilitas: form.fasilitas?.split(',').map(f=>f.trim()) || []};
+    try {
+      if (editId) {
+        await api.updatePaket(editId, payload);
+        showToast('Paket berhasil diupdate!');
+      } else {
+        await api.createPaket(payload);
+        showToast('Paket berhasil ditambahkan!');
+      }
+      setShowForm(false); load();
+    } catch(err) {
+      const msg = err.errors ? Object.values(err.errors).flat().join(', ') : (err.message || 'Gagal menyimpan');
+      showToast(msg, 'error');
+    }
+  };
+
+  const handleDelete = async (id, nama) => {
+    if (!confirm(`Hapus paket "${nama}"? Data ini tidak bisa dikembalikan.`)) return;
+    try { await api.deletePaket(id); showToast('Paket dihapus!'); load(); }
+    catch(err) { showToast(err.message || 'Gagal menghapus', 'error'); }
+  };
+
   if (loading) return <div className="loading-page"><div className="spinner"/></div>;
+
   return (<div>
-    <div className="page-header" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><h1>📦 Paket Umroh</h1><p>Kelola paket umroh</p></div>
-      <button className="btn btn-gold" onClick={()=>{setForm({nama_paket:'',kode_paket:'',tipe:'reguler',harga:'',dp_minimum:'',durasi_hari:9,maskapai:'',hotel_makkah:'',hotel_madinah:'',fasilitas:''});setShowForm('paket')}}>+ Tambah Paket</button></div>
-    <div className="table-container card" style={{padding:0}}>
-      <table><thead><tr><th>Kode</th><th>Nama</th><th>Tipe</th><th>Harga</th><th>DP Min</th><th>Durasi</th><th>Jadwal</th></tr></thead>
-      <tbody>{paket.map(p=>(<tr key={p.id}><td style={{color:'var(--gold-400)',fontWeight:600}}>{p.kode_paket}</td><td>{p.nama_paket}</td>
-        <td><span className="badge badge-pending">{p.tipe?.toUpperCase()}</span></td>
-        <td>{formatRp(p.harga)}</td><td>{formatRp(p.dp_minimum)}</td><td>{p.durasi_hari} hari</td><td>{p.jadwal_count||0}</td></tr>))}</tbody></table>
+    <div className="page-header" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+      <div><h1>📦 Paket Umroh</h1><p>Kelola paket umroh</p></div>
+      <button className="btn btn-gold" onClick={openAdd}>+ Tambah Paket</button>
     </div>
-    {showForm==='paket' && (<div className="modal-overlay" onClick={()=>setShowForm(null)}><div className="modal-content" onClick={e=>e.stopPropagation()}>
-      <h2 className="modal-title">Tambah Paket Umroh</h2>
-      <form onSubmit={handleCreate}>
+
+    <div className="table-container card" style={{padding:0}}>
+      <table><thead><tr><th>Kode</th><th>Nama</th><th>Tipe</th><th>Harga</th><th>DP Min</th><th>Durasi</th><th>Jadwal</th><th>Aksi</th></tr></thead>
+      <tbody>{paket.map(p=>(
+        <tr key={p.id}>
+          <td style={{color:'var(--gold-400)',fontWeight:600}}>{p.kode_paket}</td>
+          <td>{p.nama_paket}</td>
+          <td><span className="badge badge-pending">{p.tipe?.toUpperCase()}</span></td>
+          <td>{formatRp(p.harga)}</td><td>{formatRp(p.dp_minimum)}</td>
+          <td>{p.durasi_hari} hari</td><td>{p.jadwal_count||0}</td>
+          <td style={{display:'flex',gap:6}}>
+            <button className="btn btn-sm btn-outline" onClick={()=>openEdit(p)} title="Edit">✏️</button>
+            <button className="btn btn-sm btn-danger" onClick={()=>handleDelete(p.id, p.nama_paket)} title="Hapus">🗑️</button>
+          </td>
+        </tr>
+      ))}</tbody></table>
+    </div>
+
+    {showForm && (<div className="modal-overlay" onClick={()=>setShowForm(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}>
+      <h2 className="modal-title">{editId ? '✏️ Edit Paket Umroh' : '+ Tambah Paket Umroh'}</h2>
+      <form onSubmit={handleSubmit}>
         {[{n:'kode_paket',l:'Kode Paket',p:'PKT-GOLD-2026'},{n:'nama_paket',l:'Nama Paket',p:'Paket Gold 2026'},{n:'harga',l:'Harga (Rp)',p:'35000000',t:'number'},{n:'dp_minimum',l:'DP Minimum',p:'10000000',t:'number'},{n:'durasi_hari',l:'Durasi (Hari)',p:'9',t:'number'},{n:'maskapai',l:'Maskapai',p:'Garuda Indonesia'},{n:'hotel_makkah',l:'Hotel Makkah'},{n:'hotel_madinah',l:'Hotel Madinah'},{n:'fasilitas',l:'Fasilitas (koma)',p:'Tiket PP, Hotel, Makan 3x'}].map(f=>(
           <div className="input-group" key={f.n}><label>{f.l}</label><input className="input-field" type={f.t||'text'} placeholder={f.p||''} value={form[f.n]||''} onChange={e=>setForm({...form,[f.n]:e.target.value})} required={!['fasilitas','maskapai','hotel_makkah','hotel_madinah'].includes(f.n)} /></div>))}
         <div className="input-group"><label>Tipe</label><select className="input-field" value={form.tipe} onChange={e=>setForm({...form,tipe:e.target.value})}><option value="reguler">Reguler</option><option value="vip">VIP</option><option value="vvip">VVIP</option></select></div>
-        <div style={{display:'flex',gap:8,marginTop:16}}><button type="submit" className="btn btn-gold">Simpan</button><button type="button" className="btn btn-outline" onClick={()=>setShowForm(null)}>Batal</button></div>
-      </form></div></div>)}
+        <div style={{display:'flex',gap:8,marginTop:16}}>
+          <button type="submit" className="btn btn-gold">{editId ? 'Update' : 'Simpan'}</button>
+          <button type="button" className="btn btn-outline" onClick={()=>setShowForm(false)}>Batal</button>
+        </div>
+      </form>
+    </div></div>)}
   </div>);
 }
 
 function JadwalPanel({ showToast }) {
   const [jadwal, setJadwal] = useState([]); const [paket, setPaket] = useState([]);
-  const [loading, setLoading] = useState(true); const [showForm, setShowForm] = useState(false); const [form, setForm] = useState({});
+  const [loading, setLoading] = useState(true); const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null); const [form, setForm] = useState({});
+  const emptyForm = {paket_id:'',kode_jadwal:'',tanggal_berangkat:'',tanggal_pulang:'',kota_keberangkatan:'Jakarta',kuota_total:'',status:'open'};
+
   const load = async () => { setLoading(true); try { const [j,p] = await Promise.all([api.getAdminJadwal(), api.getAdminPaket()]); setJadwal(j.data||[]); setPaket(p.data||[]); } catch(e) { showToast('Gagal','error'); } setLoading(false); };
   useEffect(() => { load(); }, []);
-  const handleCreate = async (e) => { e.preventDefault(); try { await api.createJadwal(form); showToast('Jadwal ditambahkan!'); setShowForm(false); load(); } catch(err) { showToast(err.message||'Gagal','error'); } };
+
+  const openAdd = () => { setEditId(null); setForm({...emptyForm}); setShowForm(true); };
+  const openEdit = (j) => {
+    setEditId(j.id);
+    setForm({
+      paket_id: j.paket_id||'', kode_jadwal: j.kode_jadwal||'',
+      tanggal_berangkat: j.tanggal_berangkat?.slice(0,10)||'',
+      tanggal_pulang: j.tanggal_pulang?.slice(0,10)||'',
+      kota_keberangkatan: j.kota_keberangkatan||'Jakarta',
+      kuota_total: j.kuota_total||'', status: j.status||'open',
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editId) {
+        await api.updateJadwal(editId, form);
+        showToast('Jadwal berhasil diupdate!');
+      } else {
+        await api.createJadwal(form);
+        showToast('Jadwal berhasil ditambahkan!');
+      }
+      setShowForm(false); load();
+    } catch(err) {
+      const msg = err.errors ? Object.values(err.errors).flat().join(', ') : (err.message || 'Gagal menyimpan');
+      showToast(msg, 'error');
+    }
+  };
+
+  const handleDelete = async (id, kode) => {
+    if (!confirm(`Hapus jadwal "${kode}"? Data ini tidak bisa dikembalikan.`)) return;
+    try { await api.deleteJadwal(id); showToast('Jadwal dihapus!'); load(); }
+    catch(err) { showToast(err.message || 'Gagal menghapus', 'error'); }
+  };
+
   if (loading) return <div className="loading-page"><div className="spinner"/></div>;
+
   return (<div>
-    <div className="page-header" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><h1>📅 Jadwal</h1><p>Kelola jadwal keberangkatan</p></div>
-      <button className="btn btn-gold" onClick={()=>{setForm({paket_id:'',kode_jadwal:'',tanggal_berangkat:'',tanggal_pulang:'',kota_keberangkatan:'Jakarta',kuota_total:''});setShowForm(true)}}>+ Tambah Jadwal</button></div>
-    <div className="table-container card" style={{padding:0}}>
-      <table><thead><tr><th>Kode</th><th>Paket</th><th>Berangkat</th><th>Pulang</th><th>Kuota</th><th>Status</th></tr></thead>
-      <tbody>{jadwal.map(j=>(<tr key={j.id}><td style={{color:'var(--gold-400)',fontWeight:600}}>{j.kode_jadwal}</td><td>{j.paket?.nama_paket}</td><td>{formatDate(j.tanggal_berangkat)}</td><td>{formatDate(j.tanggal_pulang)}</td>
-        <td><strong>{j.sisa_kuota}</strong>/{j.kuota_total}</td><td><span className={`badge badge-${j.status==='open'?'confirmed':'pending'}`}>{j.status}</span></td></tr>))}</tbody></table>
+    <div className="page-header" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+      <div><h1>📅 Jadwal</h1><p>Kelola jadwal keberangkatan</p></div>
+      <button className="btn btn-gold" onClick={openAdd}>+ Tambah Jadwal</button>
     </div>
+
+    <div className="table-container card" style={{padding:0}}>
+      <table><thead><tr><th>Kode</th><th>Paket</th><th>Berangkat</th><th>Pulang</th><th>Kuota</th><th>Status</th><th>Aksi</th></tr></thead>
+      <tbody>{jadwal.map(j=>(
+        <tr key={j.id}>
+          <td style={{color:'var(--gold-400)',fontWeight:600}}>{j.kode_jadwal}</td>
+          <td>{j.paket?.nama_paket}</td>
+          <td>{formatDate(j.tanggal_berangkat)}</td>
+          <td>{formatDate(j.tanggal_pulang)}</td>
+          <td><strong>{j.sisa_kuota}</strong>/{j.kuota_total}</td>
+          <td><span className={`badge badge-${j.status==='open'?'confirmed':'pending'}`}>{j.status}</span></td>
+          <td style={{display:'flex',gap:6}}>
+            <button className="btn btn-sm btn-outline" onClick={()=>openEdit(j)} title="Edit">✏️</button>
+            <button className="btn btn-sm btn-danger" onClick={()=>handleDelete(j.id, j.kode_jadwal)} title="Hapus">🗑️</button>
+          </td>
+        </tr>
+      ))}</tbody></table>
+    </div>
+
     {showForm && (<div className="modal-overlay" onClick={()=>setShowForm(false)}><div className="modal-content" onClick={e=>e.stopPropagation()}>
-      <h2 className="modal-title">Tambah Jadwal</h2>
-      <form onSubmit={handleCreate}>
+      <h2 className="modal-title">{editId ? '✏️ Edit Jadwal' : '+ Tambah Jadwal'}</h2>
+      <form onSubmit={handleSubmit}>
         <div className="input-group"><label>Paket</label><select className="input-field" value={form.paket_id} onChange={e=>setForm({...form,paket_id:e.target.value})} required><option value="">-- Pilih Paket --</option>{paket.map(p=><option key={p.id} value={p.id}>{p.nama_paket}</option>)}</select></div>
         {[{n:'kode_jadwal',l:'Kode Jadwal',p:'JDW-2026-07-A'},{n:'tanggal_berangkat',l:'Tgl Berangkat',t:'date'},{n:'tanggal_pulang',l:'Tgl Pulang',t:'date'},{n:'kota_keberangkatan',l:'Kota Berangkat',p:'Jakarta'},{n:'kuota_total',l:'Kuota Total',p:'45',t:'number'}].map(f=>(
           <div className="input-group" key={f.n}><label>{f.l}</label><input className="input-field" type={f.t||'text'} placeholder={f.p||''} value={form[f.n]||''} onChange={e=>setForm({...form,[f.n]:e.target.value})} required /></div>))}
-        <div style={{display:'flex',gap:8,marginTop:16}}><button type="submit" className="btn btn-gold">Simpan</button><button type="button" className="btn btn-outline" onClick={()=>setShowForm(false)}>Batal</button></div>
-      </form></div></div>)}
+        {editId && (
+          <div className="input-group"><label>Status</label><select className="input-field" value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>
+            <option value="open">Open</option><option value="closed">Closed</option><option value="departed">Departed</option>
+          </select></div>
+        )}
+        <div style={{display:'flex',gap:8,marginTop:16}}>
+          <button type="submit" className="btn btn-gold">{editId ? 'Update' : 'Simpan'}</button>
+          <button type="button" className="btn btn-outline" onClick={()=>setShowForm(false)}>Batal</button>
+        </div>
+      </form>
+    </div></div>)}
   </div>);
 }
 

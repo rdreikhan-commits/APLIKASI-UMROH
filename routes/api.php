@@ -91,6 +91,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/jadwal', [TravelAdminController::class, 'jadwalIndex']);
         Route::post('/jadwal', [TravelAdminController::class, 'jadwalStore']);
         Route::put('/jadwal/{id}', [TravelAdminController::class, 'jadwalUpdate']);
+        Route::delete('/jadwal/{id}', [TravelAdminController::class, 'jadwalDestroy']);
 
         // Verifikasi Dokumen
         Route::get('/dokumen', [TravelAdminController::class, 'dokumenIndex']);

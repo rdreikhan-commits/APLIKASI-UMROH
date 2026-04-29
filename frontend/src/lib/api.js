@@ -188,6 +188,9 @@ class ApiClient {
   async updateJadwal(id, payload) {
     return this.request(`/admin/travel/jadwal/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
   }
+  async deleteJadwal(id) {
+    return this.request(`/admin/travel/jadwal/${id}`, { method: 'DELETE' });
+  }
   async getDokumenList(status = '') {
     return this.request(`/admin/travel/dokumen${status ? '?status_dokumen=' + status : ''}`);
   }
