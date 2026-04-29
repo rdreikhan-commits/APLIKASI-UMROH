@@ -78,7 +78,9 @@ export default function CrudPanel({
       setShowForm(false);
       load();
     } catch (err) {
-      const msg = err.message || err.errors ? Object.values(err.errors || {}).flat().join(', ') : 'Gagal menyimpan';
+      const msg = err.errors
+        ? Object.values(err.errors).flat().join(', ')
+        : (err.message || 'Gagal menyimpan');
       showToast(msg, 'error');
     }
     setSaving(false);

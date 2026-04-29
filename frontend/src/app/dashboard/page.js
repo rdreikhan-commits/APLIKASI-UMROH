@@ -235,7 +235,7 @@ export default function DashboardPage() {
     setLoading(false);
   }, []);
 
-  const showToast = (message, type = 'success') => setToast({ message, type });
+  const showToast = (message, type = 'success') => setToast({ message, type, key: Date.now() });
 
   if (loading) return <><Navbar /><div className="loading-page"><div className="spinner"/><span>Memuat dashboard...</span></div></>;
 
@@ -274,7 +274,7 @@ export default function DashboardPage() {
   return (
     <>
       <Navbar />
-      {toast && <Toast {...toast} onClose={() => setToast(null)} />}
+      {toast && <Toast key={toast.key} {...toast} onClose={() => setToast(null)} />}
       <div className="dashboard-layout">
         <Sidebar role={user?.role} activeMenu={activeMenu} onMenuChange={setActiveMenu} />
         <div className="main-content">

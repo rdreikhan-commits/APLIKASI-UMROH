@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // CORS — agar frontend Next.js bisa akses API
+        $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
+
         // Register middleware alias untuk RBAC
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
