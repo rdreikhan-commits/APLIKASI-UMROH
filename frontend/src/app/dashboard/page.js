@@ -7,6 +7,7 @@ import Toast from '@/components/Toast';
 import OverviewPanel from '@/components/panels/OverviewPanel';
 import { MaskapaiPanel, HotelPanel, AgentPanel, KaryawanPanel, MitraPanel, LayananPanel } from '@/components/panels/MasterDataPanels';
 import { PengeluaranPanel, PemasukanPanel, BonusAgentPanel, LaporanKeuanganPanel } from '@/components/panels/KeuanganPanels';
+import DokumenSuratPanel from '@/components/panels/DokumenSuratPanel';
 import api from '@/lib/api';
 
 const formatRp = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
@@ -395,6 +396,8 @@ export default function DashboardPage() {
     // Admin Perlengkapan
     inventory: <InventoryPanel showToast={showToast} />,
     distribusi: <DistribusiPanel showToast={showToast} />,
+    // Dokumen & Surat
+    surat: <DokumenSuratPanel showToast={showToast} />,
   };
 
   return (

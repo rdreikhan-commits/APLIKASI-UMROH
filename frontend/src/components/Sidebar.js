@@ -14,6 +14,8 @@ export default function Sidebar({ role, activeMenu, onMenuChange }) {
     { id: 'karyawan', icon: '👤', label: 'Karyawan' },
     { id: 'mitra', icon: '🏢', label: 'Mitra' },
     { id: 'layanan', icon: '⭐', label: 'Layanan' },
+    { section: 'Dokumen' },
+    { id: 'surat', icon: '🖨️', label: 'Cetak Surat (25)' },
   ];
 
   const adminKeuanganMenus = [
