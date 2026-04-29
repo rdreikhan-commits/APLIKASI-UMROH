@@ -1,0 +1,25 @@
+# Laravel
+/vendor
+/node_modules
+/.env
+/storage/*.key
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/public/hot
+/public/storage
+
+# Next.js Frontend
+/frontend/node_modules
+/frontend/.next
+/frontend/out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
