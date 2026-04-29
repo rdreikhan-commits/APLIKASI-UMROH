@@ -42,9 +42,9 @@ export default function LoginPage() {
       }}>
         <div className="card" style={{ width: '100%', maxWidth: '420px', padding: '40px' }}>
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🕌</div>
+            <img src="/logo-mandala.png" alt="Mandala 525" style={{ width: 72, height: 72, borderRadius: '50%', margin: '0 auto 12px', display: 'block', border: '2px solid var(--gold-300)' }} />
             <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '8px' }}>Masuk ke Akun</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Silakan masukkan email dan password Anda</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Mandala 525 Tour & Travel</p>
           </div>
 
           <form onSubmit={handleSubmit}>

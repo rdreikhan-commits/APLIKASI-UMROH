@@ -1,25 +1,25 @@
 /* ═══════════════════════════════════════════════
-   GLOBAL DESIGN SYSTEM — ERP Travel Umroh
-   Premium dark theme with gold accents
+   GLOBAL DESIGN SYSTEM — Mandala 525 Tour & Travel
+   Premium dark theme with metallic gold accents
    ═══════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap');
 
 :root {
-  /* ── Color Palette ── */
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #111827;
-  --bg-card: rgba(17, 24, 39, 0.8);
-  --bg-glass: rgba(255, 255, 255, 0.03);
-  --bg-glass-hover: rgba(255, 255, 255, 0.06);
+  /* ── Color Palette — Mandala 525 ── */
+  --bg-primary: #050505;
+  --bg-secondary: #0d0d0d;
+  --bg-card: rgba(13, 13, 13, 0.9);
+  --bg-glass: rgba(212, 175, 55, 0.03);
+  --bg-glass-hover: rgba(212, 175, 55, 0.06);
 
-  --gold-50: #fffbeb;
-  --gold-100: #fef3c7;
-  --gold-200: #fde68a;
-  --gold-300: #fcd34d;
-  --gold-400: #fbbf24;
-  --gold-500: #f59e0b;
-  --gold-600: #d97706;
+  --gold-50: #fdf8e8;
+  --gold-100: #f5e6b8;
+  --gold-200: #e8c84b;
+  --gold-300: #d4af37;
+  --gold-400: #c5a028;
+  --gold-500: #b8960c;
+  --gold-600: #9a7d0a;
 
   --emerald-400: #34d399;
   --emerald-500: #10b981;
@@ -30,19 +30,19 @@
   --purple-400: #a78bfa;
   --orange-400: #fb923c;
 
-  --text-primary: #f9fafb;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
-  --text-gold: #fbbf24;
+  --text-primary: #f5f0e1;
+  --text-secondary: #a89968;
+  --text-muted: #6b6040;
+  --text-gold: #d4af37;
 
-  --border-default: rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(255, 255, 255, 0.12);
-  --border-gold: rgba(251, 191, 36, 0.3);
+  --border-default: rgba(212, 175, 55, 0.08);
+  --border-hover: rgba(212, 175, 55, 0.18);
+  --border-gold: rgba(212, 175, 55, 0.35);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.5);
-  --shadow-gold: 0 0 30px rgba(251, 191, 36, 0.15);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.7);
+  --shadow-gold: 0 0 30px rgba(212, 175, 55, 0.15);
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -90,13 +90,14 @@ body {
 }
 
 .btn-gold {
-  background: linear-gradient(135deg, var(--gold-500), var(--gold-600));
-  color: #0a0e1a;
-  box-shadow: 0 2px 10px rgba(251, 191, 36, 0.3);
+  background: linear-gradient(135deg, #e8c84b, #d4af37, #b8960c);
+  color: #050505;
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
+  font-weight: 700;
 }
 .btn-gold:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(251, 191, 36, 0.5);
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.5);
 }
 
 .btn-outline {

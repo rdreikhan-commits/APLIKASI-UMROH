@@ -29,7 +29,14 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="navbar-inner">
         <a href="/" className="navbar-brand">
-          🕌 <span>UmrohERP</span>
+          <img src="/logo-mandala.png" alt="Mandala 525" style={{
+            width: 36, height: 36, borderRadius: '50%',
+            objectFit: 'cover', border: '1.5px solid var(--gold-300)',
+          }} />
+          <div>
+            <span style={{ color: 'var(--gold-300)', fontWeight: 800, fontSize: 16, letterSpacing: 1 }}>MANDALA</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 11, display: 'block', marginTop: -3, letterSpacing: 2 }}>525 TOUR & TRAVEL</span>
+          </div>
         </a>
 
         <div className="navbar-links">

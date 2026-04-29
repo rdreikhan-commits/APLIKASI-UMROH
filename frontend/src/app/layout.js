@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "ERP Travel Umroh — Sistem Manajemen Terintegrasi",
-  description: "Sistem ERP terintegrasi untuk manajemen perjalanan umroh. Booking, pembayaran, dokumen, dan perlengkapan dalam satu platform.",
+  title: "Mandala 525 — Tour & Travel Umroh",
+  description: "Sistem manajemen perjalanan umroh terintegrasi oleh Mandala Lima Dua Lima Tour & Travel.",
 };
 
 export default function RootLayout({ children }) {
