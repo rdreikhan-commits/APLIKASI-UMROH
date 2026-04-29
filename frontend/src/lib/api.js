@@ -200,6 +200,9 @@ class ApiClient {
   async getManifest(jadwalId) {
     return this.request(`/admin/travel/manifest/${jadwalId}`);
   }
+  async getDashboardStats(period = 'month') {
+    return this.request(`/admin/travel/dashboard-stats?period=${period}`);
+  }
 
   // ── ADMIN KEUANGAN ──
   async getPembayaranList(status = '') {

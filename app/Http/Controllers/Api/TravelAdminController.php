@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Jadwal;
 use App\Models\PaketUmroh;
+use App\Models\Pembayaran;
+use App\Models\Pengeluaran;
+use App\Models\Pemasukan;
+use App\Models\Agent;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * =====================================================
@@ -341,6 +346,128 @@ class TravelAdminController extends Controller
                 'total_jamaah'   => $jamaahConfirmed->count(),
                 'manifest'       => $jamaahConfirmed,
                 'generated_at'   => now()->format('Y-m-d H:i:s'),
+            ],
+        ]);
+    }
+
+    // ═════════════════════════════════════════════
+    // DASHBOARD STATS (GRAFIK)
+    // ═════════════════════════════════════════════
+
+    /**
+     * Dashboard overview stats.
+     * GET /api/admin/travel/dashboard-stats?period=month
+     * period: week, 2week, month, 3month, year
+     */
+    public function dashboardStats(Request $request): JsonResponse
+    {
+        $period = $request->get('period', 'month');
+
+        // Determine date range
+        $now = now();
+        $startDate = match($period) {
+            'week'   => $now->copy()->subWeek(),
+            '2week'  => $now->copy()->subWeeks(2),
+            'month'  => $now->copy()->subMonth(),
+            '3month' => $now->copy()->subMonths(3),
+            'year'   => $now->copy()->subYear(),
+            default  => $now->copy()->subMonth(),
+        };
+
+        // Date format for grouping
+        $groupFormat = match($period) {
+            'week', '2week' => '%Y-%m-%d',
+            'month'         => '%Y-%m-%d',
+            '3month'        => '%Y-%u',
+            'year'          => '%Y-%m',
+            default         => '%Y-%m-%d',
+        };
+
+        // ── Summary Cards ──
+        $totalPaket = PaketUmroh::count();
+        $totalJamaah = User::where('role', 'jamaah')->count();
+        $totalBooking = Booking::count();
+        $bookingConfirmed = Booking::where('status', 'confirmed')->count();
+        $jadwalOpen = Jadwal::where('status', 'open')->count();
+        $totalAgent = Agent::count();
+
+        // ── Booking Trend ──
+        $bookingTrend = Booking::where('created_at', '>=', $startDate)
+            ->select(DB::raw("DATE_FORMAT(created_at, '{$groupFormat}') as label"), DB::raw('COUNT(*) as total'))
+            ->groupBy('label')
+            ->orderBy('label')
+            ->get();
+
+        // ── Paket Type Distribution (Pie) ──
+        $paketDistribution = PaketUmroh::select('tipe', DB::raw('COUNT(*) as total'))
+            ->groupBy('tipe')
+            ->get();
+
+        // ── Booking by Status (Pie) ──
+        $bookingByStatus = Booking::select('status', DB::raw('COUNT(*) as total'))
+            ->groupBy('status')
+            ->get();
+
+        // ── Cash Flow (Arus Kas) ──
+        $pemasukan = Pemasukan::where('tanggal', '>=', $startDate)
+            ->select(DB::raw("DATE_FORMAT(tanggal, '{$groupFormat}') as label"), DB::raw('SUM(nominal) as total'))
+            ->groupBy('label')
+            ->orderBy('label')
+            ->get();
+
+        $pengeluaran = Pengeluaran::where('tanggal', '>=', $startDate)
+            ->select(DB::raw("DATE_FORMAT(tanggal, '{$groupFormat}') as label"), DB::raw('SUM(nominal) as total'))
+            ->groupBy('label')
+            ->orderBy('label')
+            ->get();
+
+        $pembayaranVerified = Pembayaran::where('status_pembayaran', 'verified')
+            ->where('created_at', '>=', $startDate)
+            ->sum('nominal');
+
+        $totalPengeluaranPeriod = Pengeluaran::where('tanggal', '>=', $startDate)->sum('nominal');
+        $totalPemasukanPeriod = Pemasukan::where('tanggal', '>=', $startDate)->sum('nominal');
+
+        // ── Pengeluaran per Kategori (Donut) ──
+        $pengeluaranKategori = Pengeluaran::where('tanggal', '>=', $startDate)
+            ->select('kategori', DB::raw('SUM(nominal) as total'))
+            ->groupBy('kategori')
+            ->orderByDesc('total')
+            ->get();
+
+        // ── Jadwal Terdekat ──
+        $jadwalTerdekat = Jadwal::with('paket:id,nama_paket,kode_paket')
+            ->where('status', 'open')
+            ->where('tanggal_berangkat', '>=', now())
+            ->orderBy('tanggal_berangkat')
+            ->limit(5)
+            ->get(['id','paket_id','kode_jadwal','tanggal_berangkat','kuota_total','sisa_kuota']);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'summary' => [
+                    'total_paket' => $totalPaket,
+                    'total_jamaah' => $totalJamaah,
+                    'total_booking' => $totalBooking,
+                    'booking_confirmed' => $bookingConfirmed,
+                    'jadwal_open' => $jadwalOpen,
+                    'total_agent' => $totalAgent,
+                    'pembayaran_verified' => $pembayaranVerified,
+                    'total_pemasukan' => $totalPemasukanPeriod,
+                    'total_pengeluaran' => $totalPengeluaranPeriod,
+                    'profit' => $totalPemasukanPeriod + $pembayaranVerified - $totalPengeluaranPeriod,
+                ],
+                'booking_trend' => $bookingTrend,
+                'paket_distribution' => $paketDistribution,
+                'booking_by_status' => $bookingByStatus,
+                'cash_flow' => [
+                    'pemasukan' => $pemasukan,
+                    'pengeluaran' => $pengeluaran,
+                ],
+                'pengeluaran_kategori' => $pengeluaranKategori,
+                'jadwal_terdekat' => $jadwalTerdekat,
+                'period' => $period,
             ],
         ]);
     }

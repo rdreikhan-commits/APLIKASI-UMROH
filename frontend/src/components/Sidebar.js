@@ -2,6 +2,7 @@
 
 export default function Sidebar({ role, activeMenu, onMenuChange }) {
   const adminTravelMenus = [
+    { id: 'overview', icon: '📊', label: 'Dashboard' },
     { section: 'Operasional' },
     { id: 'paket', icon: '📦', label: 'Paket Umroh' },
     { id: 'jadwal', icon: '📅', label: 'Jadwal' },
@@ -16,6 +17,7 @@ export default function Sidebar({ role, activeMenu, onMenuChange }) {
   ];
 
   const adminKeuanganMenus = [
+    { id: 'overview', icon: '📊', label: 'Dashboard' },
     { section: 'Keuangan' },
     { id: 'pembayaran', icon: '💳', label: 'Pembayaran' },
     { id: 'pemasukan', icon: '📈', label: 'Pemasukan' },

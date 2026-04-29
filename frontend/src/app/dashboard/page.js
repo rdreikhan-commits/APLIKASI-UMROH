@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 import Toast from '@/components/Toast';
+import OverviewPanel from '@/components/panels/OverviewPanel';
 import { MaskapaiPanel, HotelPanel, AgentPanel, KaryawanPanel, MitraPanel, LayananPanel } from '@/components/panels/MasterDataPanels';
 import { PengeluaranPanel, PemasukanPanel, BonusAgentPanel, LaporanKeuanganPanel } from '@/components/panels/KeuanganPanels';
 import api from '@/lib/api';
@@ -353,7 +354,7 @@ export default function DashboardPage() {
     if (!u) { router.push('/login'); return; }
     setUser(u);
     // Set default menu
-    const defaults = { admin_travel: 'paket', admin_keuangan: 'pembayaran', admin_perlengkapan: 'inventory' };
+    const defaults = { admin_travel: 'overview', admin_keuangan: 'overview', admin_perlengkapan: 'inventory' };
     setActiveMenu(defaults[u.role] || '');
     setLoading(false);
   }, []);
@@ -373,6 +374,8 @@ export default function DashboardPage() {
 
   // Admin panel routing
   const adminPanels = {
+    // Dashboard Overview
+    overview: <OverviewPanel showToast={showToast} />,
     // Admin Travel
     paket: <PaketPanel showToast={showToast} />,
     jadwal: <JadwalPanel showToast={showToast} />,

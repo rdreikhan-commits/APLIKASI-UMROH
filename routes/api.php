@@ -99,6 +99,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Manifest
         Route::get('/manifest/{jadwalId}', [TravelAdminController::class, 'manifest']);
+
+        // Dashboard Stats
+        Route::get('/dashboard-stats', [TravelAdminController::class, 'dashboardStats']);
     });
 
     // ═════════════════════════════════════════
