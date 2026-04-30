@@ -192,4 +192,53 @@ class AuthController extends Controller
             'data'    => $user->fresh(),
         ]);
     }
+
+    /**
+     * Login via Google OAuth.
+     * POST /api/auth/google
+     */
+    public function googleLogin(Request $request): JsonResponse
+    {
+        $request->validate(['credential' => 'required|string']);
+
+        // Decode Google JWT token (payload is base64-encoded JSON)
+        $parts = explode('.', $request->credential);
+        if (count($parts) !== 3) {
+            return response()->json(['success' => false, 'message' => 'Token Google tidak valid.'], 401);
+        }
+
+        $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+
+        if (!$payload || !isset($payload['email'])) {
+            return response()->json(['success' => false, 'message' => 'Data Google tidak valid.'], 401);
+        }
+
+        // Find or create user
+        $user = User::where('email', $payload['email'])->first();
+
+        if (!$user) {
+            $user = User::create([
+                'nama'     => $payload['name'] ?? $payload['email'],
+                'email'    => $payload['email'],
+                'password' => Hash::make(str()->random(32)), // Random password
+                'role'     => 'jamaah',
+                'google_id' => $payload['sub'] ?? null,
+            ]);
+        } else {
+            // Update google_id if not set
+            if (empty($user->google_id) && isset($payload['sub'])) {
+                $user->update(['google_id' => $payload['sub']]);
+            }
+        }
+
+        $user->tokens()->delete();
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login Google berhasil.',
+            'user'    => $user,
+            'token'   => $token,
+        ]);
+    }
 }

@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '@/lib/api';
 import DocumentTemplate, { fmtRp, fmtDate, InfoGrid, SectionTitle, DocTable } from '../DocumentTemplate';
 
 const DOC_CATEGORIES = [
@@ -45,194 +46,267 @@ const DOC_CATEGORIES = [
   ]},
 ];
 
-// Sample data generator
-function getSampleData(docId) {
-  const base = { nama: 'Ahmad Fauzi', nik: '3201234567890001', noHp: '081234567890', email: 'ahmad@email.com', alamat: 'Jl. Merdeka No. 10, Jakarta', noBooking: 'BK-2026-001', paket: 'Paket Gold 2026', harga: 35000000, dp: 10000000, tglBooking: '2026-04-29', tglBerangkat: '2026-10-11', tglPulang: '2026-10-20', maskapai: 'Garuda Indonesia', hotel: 'Grand Zamzam Makkah' };
-  return base;
-}
-
 function genDocNo(prefix) {
   return `${prefix}-${new Date().getFullYear()}-${String(Math.floor(Math.random()*9999)).padStart(4,'0')}`;
+}
+
+// Build doc data from real booking
+function buildData(booking) {
+  const u = booking?.user || {};
+  const j = booking?.jadwal || {};
+  const p = j?.paket || {};
+  return {
+    nama: u.nama || '-', nik: u.nik || '-', noHp: u.no_hp || '-', email: u.email || '-',
+    alamat: u.alamat || '-', noBooking: booking?.kode_booking || '-',
+    paket: p.nama_paket || '-', harga: Number(booking?.total_harga || p.harga || 0),
+    dp: Number(p.dp_minimum || 0), dibayar: Number(booking?.total_dibayar || 0),
+    tglBooking: booking?.created_at, tglBerangkat: j.tanggal_berangkat,
+    tglPulang: j.tanggal_pulang, maskapai: p.maskapai || '-',
+    hotel: p.hotel_makkah || '-', durasi: p.durasi_hari || 9,
+    pembayaran: booking?.pembayaran || [],
+  };
 }
 
 // ── Document content renderer ──
 function DocContent({ docId, data }) {
   const d = data;
+  const sisa = d.harga - d.dibayar;
   switch(docId) {
     case 'form_umroh': return (<div>
       <SectionTitle>Data Jamaah</SectionTitle>
       <InfoGrid items={[['Nama Lengkap', d.nama],['NIK', d.nik],['No. HP', d.noHp],['Email', d.email],['Alamat', d.alamat],['Kode Booking', d.noBooking]]} />
       <SectionTitle>Detail Paket</SectionTitle>
-      <InfoGrid items={[['Paket', d.paket],['Harga', fmtRp(d.harga)],['DP Minimum', fmtRp(d.dp)],['Maskapai', d.maskapai],['Hotel', d.hotel],['Durasi', '9 hari']]} />
+      <InfoGrid items={[['Paket', d.paket],['Harga', fmtRp(d.harga)],['DP Minimum', fmtRp(d.dp)],['Maskapai', d.maskapai],['Hotel', d.hotel],['Durasi', `${d.durasi} hari`]]} />
       <SectionTitle>Jadwal</SectionTitle>
       <InfoGrid items={[['Tgl Berangkat', fmtDate(d.tglBerangkat)],['Tgl Pulang', fmtDate(d.tglPulang)]]} />
-      <p style={{marginTop:20,fontSize:11,color:'#666'}}>Dengan menandatangani formulir ini, saya menyatakan bahwa data di atas adalah benar dan saya bersedia mengikuti seluruh ketentuan perjalanan umroh yang berlaku.</p>
+      <p style={{marginTop:20,fontSize:11,color:'#666'}}>Dengan menandatangani formulir ini, saya menyatakan bahwa data di atas adalah benar.</p>
     </div>);
     case 'form_haji': return (<div>
       <SectionTitle>Data Calon Jamaah Haji</SectionTitle>
       <InfoGrid items={[['Nama Lengkap', d.nama],['NIK', d.nik],['No. HP', d.noHp],['Email', d.email],['Alamat', d.alamat]]} />
       <SectionTitle>Detail Pendaftaran Haji</SectionTitle>
       <InfoGrid items={[['Jenis', 'Haji Reguler'],['Estimasi Keberangkatan', '2030'],['Biaya BPIH', fmtRp(45000000)]]} />
-      <p style={{marginTop:20,fontSize:11,color:'#666'}}>Pendaftaran haji bersifat antrian sesuai ketentuan Kementerian Agama RI.</p>
     </div>);
     case 'inv_umroh': return (<div>
       <SectionTitle>Tagihan Kepada</SectionTitle>
-      <InfoGrid items={[['Nama', d.nama],['No. Booking', d.noBooking],['Email', d.email]]} />
+      <InfoGrid items={[['Nama', d.nama],['No. Booking', d.noBooking],['Email', d.email],['NIK', d.nik]]} />
       <SectionTitle>Rincian Biaya</SectionTitle>
       <DocTable headers={['No','Deskripsi','Jumlah']} rows={[
-        ['1', `Paket ${d.paket}`, fmtRp(d.harga)],['2','Biaya Visa', fmtRp(2500000)],['3','Asuransi Perjalanan', fmtRp(500000)],
-      ]} showTotal totalLabel="TOTAL TAGIHAN" totalValue={fmtRp(d.harga+3000000)} />
-      <InfoGrid items={[['Status','BELUM LUNAS'],['DP Dibayar', fmtRp(d.dp)],['Sisa Pelunasan', fmtRp(d.harga+3000000-d.dp)]]} />
+        ['1', `Paket ${d.paket}`, fmtRp(d.harga)],
+      ]} showTotal totalLabel="TOTAL TAGIHAN" totalValue={fmtRp(d.harga)} />
+      <InfoGrid items={[['Total Dibayar', fmtRp(d.dibayar)],['Sisa Pelunasan', fmtRp(sisa)],['Status', sisa <= 0 ? 'LUNAS ✅' : 'BELUM LUNAS']]} />
     </div>);
     case 'bukti_bayar_umroh': return (<div>
       <SectionTitle>Data Pembayaran</SectionTitle>
-      <InfoGrid items={[['Nama Jamaah', d.nama],['No. Booking', d.noBooking],['Metode Pembayaran','Transfer Bank BCA'],['No. Referensi','TRF-20260429-001']]} />
-      <DocTable headers={['Keterangan','Nominal']} rows={[['Pembayaran DP Paket Umroh', fmtRp(d.dp)]]} showTotal totalLabel="TOTAL DIBAYAR" totalValue={fmtRp(d.dp)} />
-      <p style={{fontSize:11,color:'#666',marginTop:12}}>Pembayaran telah diverifikasi dan diterima dengan baik.</p>
+      <InfoGrid items={[['Nama Jamaah', d.nama],['NIK', d.nik],['No. Booking', d.noBooking]]} />
+      {d.pembayaran?.filter(p=>p.status_pembayaran==='verified').length > 0 ? (
+        <DocTable headers={['No','Tanggal','Keterangan','Nominal']} rows={
+          d.pembayaran.filter(p=>p.status_pembayaran==='verified').map((p,i)=>[String(i+1), fmtDate(p.created_at), p.jenis_pembayaran?.toUpperCase()||'Pembayaran', fmtRp(p.nominal)])
+        } showTotal totalLabel="TOTAL DIBAYAR" totalValue={fmtRp(d.dibayar)} />
+      ) : (
+        <DocTable headers={['Keterangan','Nominal']} rows={[['Total Terbayar', fmtRp(d.dibayar)]]} />
+      )}
     </div>);
     case 'riwayat_bayar_umroh': return (<div>
       <SectionTitle>Data Jamaah</SectionTitle>
-      <InfoGrid items={[['Nama', d.nama],['No. Booking', d.noBooking],['Paket', d.paket]]} />
+      <InfoGrid items={[['Nama', d.nama],['NIK', d.nik],['No. Booking', d.noBooking],['Paket', d.paket]]} />
       <SectionTitle>Riwayat Pembayaran</SectionTitle>
-      <DocTable headers={['No','Tanggal','Keterangan','Metode','Nominal']} rows={[
-        ['1','29 Apr 2026','DP Awal','Transfer BCA', fmtRp(d.dp)],['2','15 Mei 2026','Cicilan 1','Transfer BCA', fmtRp(5000000)],['3','15 Jun 2026','Pelunasan','Transfer BCA', fmtRp(d.harga-d.dp-5000000)],
-      ]} showTotal totalLabel="TOTAL DIBAYAR" totalValue={fmtRp(d.harga)} />
+      {d.pembayaran?.length > 0 ? (
+        <DocTable headers={['No','Tanggal','Keterangan','Status','Nominal']} rows={
+          d.pembayaran.map((p,i)=>[String(i+1), fmtDate(p.created_at), p.jenis_pembayaran?.toUpperCase()||'-', p.status_pembayaran, fmtRp(p.nominal)])
+        } showTotal totalLabel="TOTAL" totalValue={fmtRp(d.dibayar)} />
+      ) : <p style={{fontSize:12,color:'#666'}}>Belum ada pembayaran tercatat.</p>}
     </div>);
     case 'inv_haji': return (<div>
       <SectionTitle>Tagihan Kepada</SectionTitle>
       <InfoGrid items={[['Nama', d.nama],['NIK', d.nik],['Email', d.email]]} />
       <SectionTitle>Rincian Biaya Haji</SectionTitle>
-      <DocTable headers={['No','Deskripsi','Jumlah']} rows={[['1','Biaya BPIH Haji Reguler', fmtRp(45000000)],['2','Biaya Handling & Administrasi', fmtRp(3000000)]]} showTotal totalLabel="TOTAL" totalValue={fmtRp(48000000)} />
+      <DocTable headers={['No','Deskripsi','Jumlah']} rows={[['1','Biaya BPIH Haji Reguler', fmtRp(45000000)],['2','Biaya Handling', fmtRp(3000000)]]} showTotal totalLabel="TOTAL" totalValue={fmtRp(48000000)} />
     </div>);
     case 'bukti_bayar_haji': return (<div>
       <SectionTitle>Bukti Pembayaran Haji</SectionTitle>
-      <InfoGrid items={[['Nama', d.nama],['NIK', d.nik],['Metode','Transfer Bank Syariah'],['No. Referensi','TRF-HAJI-001']]} />
-      <DocTable headers={['Keterangan','Nominal']} rows={[['Setoran Awal BPIH', fmtRp(25000000)]]} showTotal totalLabel="TOTAL" totalValue={fmtRp(25000000)} />
+      <InfoGrid items={[['Nama', d.nama],['NIK', d.nik]]} />
+      <DocTable headers={['Keterangan','Nominal']} rows={[['Setoran BPIH', fmtRp(d.dibayar)]]} showTotal totalLabel="TOTAL" totalValue={fmtRp(d.dibayar)} />
     </div>);
     case 'riwayat_bayar_haji': return (<div>
-      <SectionTitle>Riwayat Pembayaran Haji</SectionTitle>
-      <InfoGrid items={[['Nama', d.nama],['NIK', d.nik]]} />
-      <DocTable headers={['No','Tanggal','Keterangan','Nominal','Saldo']} rows={[
-        ['1','29 Apr 2026','Setoran Awal', fmtRp(25000000), fmtRp(25000000)],['2','29 Mei 2026','Cicilan 1', fmtRp(10000000), fmtRp(35000000)],
-      ]} showTotal totalLabel="TOTAL TERBAYAR" totalValue={fmtRp(35000000)} />
+      <SectionTitle>Riwayat Pembayaran Haji — {d.nama}</SectionTitle>
+      <InfoGrid items={[['NIK', d.nik]]} />
+      <DocTable headers={['No','Tanggal','Keterangan','Nominal']} rows={
+        d.pembayaran?.length > 0 ? d.pembayaran.map((p,i)=>[String(i+1), fmtDate(p.created_at), p.jenis_pembayaran||'-', fmtRp(p.nominal)]) : [['1','-','Belum ada pembayaran','-']]
+      } />
     </div>);
     case 'bukti_setor_umroh': case 'bukti_setor_haji': return (<div>
       <SectionTitle>Bukti Setoran Tabungan {docId.includes('haji')?'Haji':'Umroh'}</SectionTitle>
-      <InfoGrid items={[['Nama', d.nama],['No. Rekening Tabungan','TAB-'+d.nik.slice(-6)],['Tanggal Setoran', fmtDate(new Date())],['Metode','Transfer Bank']]} />
-      <DocTable headers={['Keterangan','Nominal']} rows={[['Setoran Tabungan '+( docId.includes('haji')?'Haji':'Umroh'), fmtRp(2000000)]]} showTotal totalLabel="SALDO SETELAH SETORAN" totalValue={fmtRp(12000000)} />
+      <InfoGrid items={[['Nama', d.nama],['NIK', d.nik],['No. Rek Tabungan','TAB-'+d.nik.slice(-6)],['Tanggal', fmtDate(new Date())]]} />
+      <DocTable headers={['Keterangan','Nominal']} rows={[['Setoran Tabungan', fmtRp(d.dibayar)]]} />
     </div>);
     case 'riwayat_setor_umroh': case 'riwayat_setor_haji': return (<div>
-      <SectionTitle>Riwayat Setoran Tabungan {docId.includes('haji')?'Haji':'Umroh'}</SectionTitle>
-      <InfoGrid items={[['Nama', d.nama],['No. Rekening','TAB-'+d.nik.slice(-6)]]} />
-      <DocTable headers={['No','Tanggal','Keterangan','Debit','Kredit','Saldo']} rows={[
-        ['1','01 Jan 2026','Setoran Awal','-', fmtRp(5000000), fmtRp(5000000)],['2','01 Feb 2026','Setoran Bulanan','-', fmtRp(2000000), fmtRp(7000000)],['3','01 Mar 2026','Setoran Bulanan','-', fmtRp(2000000), fmtRp(9000000)],
-      ]} />
+      <SectionTitle>Riwayat Setoran Tabungan {docId.includes('haji')?'Haji':'Umroh'} — {d.nama}</SectionTitle>
+      <InfoGrid items={[['NIK', d.nik],['No. Rek','TAB-'+d.nik.slice(-6)]]} />
+      <DocTable headers={['No','Tanggal','Keterangan','Kredit','Saldo']} rows={
+        d.pembayaran?.length > 0 ? d.pembayaran.filter(p=>p.status_pembayaran==='verified').map((p,i,a)=>[String(i+1), fmtDate(p.created_at), 'Setoran', fmtRp(p.nominal), fmtRp(a.slice(0,i+1).reduce((s,x)=>s+Number(x.nominal),0))]) : [['1','-','Belum ada setoran','-','-']]
+      } />
     </div>);
     case 'bukti_tarik_umroh': case 'bukti_tarik_haji': return (<div>
       <SectionTitle>Bukti Penarikan Tabungan {docId.includes('haji')?'Haji':'Umroh'}</SectionTitle>
-      <InfoGrid items={[['Nama', d.nama],['No. Rekening','TAB-'+d.nik.slice(-6)],['Tanggal Penarikan', fmtDate(new Date())],['Alasan Penarikan','Pelunasan Biaya '+(docId.includes('haji')?'Haji':'Umroh')]]} />
-      <DocTable headers={['Keterangan','Nominal']} rows={[['Penarikan untuk pelunasan', fmtRp(9000000)]]} showTotal totalLabel="SALDO TERSISA" totalValue={fmtRp(0)} />
+      <InfoGrid items={[['Nama', d.nama],['NIK', d.nik],['Tanggal', fmtDate(new Date())],['Alasan','Pelunasan Biaya '+(docId.includes('haji')?'Haji':'Umroh')]]} />
+      <DocTable headers={['Keterangan','Nominal']} rows={[['Penarikan untuk pelunasan', fmtRp(d.dibayar)]]} />
     </div>);
     case 'riwayat_tarik_umroh': case 'riwayat_tarik_haji': return (<div>
-      <SectionTitle>Riwayat Penarikan Tabungan {docId.includes('haji')?'Haji':'Umroh'}</SectionTitle>
-      <InfoGrid items={[['Nama', d.nama],['No. Rekening','TAB-'+d.nik.slice(-6)]]} />
-      <DocTable headers={['No','Tanggal','Keterangan','Nominal','Saldo']} rows={[
-        ['1','29 Apr 2026','Penarikan - Pelunasan', fmtRp(9000000), fmtRp(0)],
-      ]} />
+      <SectionTitle>Riwayat Penarikan — {d.nama}</SectionTitle>
+      <DocTable headers={['No','Tanggal','Keterangan','Nominal']} rows={[['1', fmtDate(new Date()), 'Penarikan - Pelunasan', fmtRp(d.dibayar)]]} />
     </div>);
     case 'surat_paspor': return (<div>
       <p style={{marginBottom:16,fontSize:12}}>Perihal: <strong>Surat Rekomendasi Pembuatan Paspor</strong></p>
       <p style={{fontSize:12,marginBottom:8}}>Kepada Yth.<br/>Kepala Kantor Imigrasi<br/>di Tempat</p>
       <p style={{fontSize:12,lineHeight:1.8,marginTop:16}}>Dengan hormat,<br/><br/>Yang bertanda tangan di bawah ini, Mandala 525 Tour & Travel, dengan ini memberikan rekomendasi bahwa:</p>
       <InfoGrid items={[['Nama Lengkap', d.nama],['NIK', d.nik],['Alamat', d.alamat],['No. HP', d.noHp]]} />
-      <p style={{fontSize:12,lineHeight:1.8,marginTop:12}}>Adalah benar calon jamaah umroh yang terdaftar pada biro perjalanan kami dengan rencana keberangkatan pada tanggal <strong>{fmtDate(d.tglBerangkat)}</strong>. Untuk keperluan tersebut, yang bersangkutan memerlukan paspor untuk perjalanan ke Kerajaan Arab Saudi.</p>
+      <p style={{fontSize:12,lineHeight:1.8,marginTop:12}}>Adalah benar calon jamaah umroh yang terdaftar pada biro perjalanan kami dengan rencana keberangkatan pada tanggal <strong>{fmtDate(d.tglBerangkat)}</strong>.</p>
       <p style={{fontSize:12,lineHeight:1.8,marginTop:12}}>Demikian surat rekomendasi ini dibuat untuk dapat dipergunakan sebagaimana mestinya.</p>
     </div>);
     case 'surat_cuti': return (<div>
       <p style={{marginBottom:16,fontSize:12}}>Perihal: <strong>Surat Keterangan Izin Cuti untuk Ibadah Umroh</strong></p>
       <p style={{fontSize:12,marginBottom:8}}>Kepada Yth.<br/>HRD / Pimpinan Perusahaan<br/>di Tempat</p>
-      <p style={{fontSize:12,lineHeight:1.8,marginTop:16}}>Dengan hormat,<br/><br/>Yang bertanda tangan di bawah ini, Mandala 525 Tour & Travel, dengan ini menerangkan bahwa:</p>
+      <p style={{fontSize:12,lineHeight:1.8,marginTop:16}}>Dengan hormat,<br/><br/>Yang bertanda tangan di bawah ini menerangkan bahwa:</p>
       <InfoGrid items={[['Nama Lengkap', d.nama],['NIK', d.nik],['Alamat', d.alamat]]} />
-      <p style={{fontSize:12,lineHeight:1.8,marginTop:12}}>Adalah benar calon jamaah umroh yang terdaftar di biro perjalanan kami dan akan melaksanakan ibadah umroh dengan jadwal sebagai berikut:</p>
-      <InfoGrid items={[['Tanggal Berangkat', fmtDate(d.tglBerangkat)],['Tanggal Kembali', fmtDate(d.tglPulang)],['Durasi', '9 hari'],['Maskapai', d.maskapai]]} />
-      <p style={{fontSize:12,lineHeight:1.8,marginTop:12}}>Untuk itu kami mohon agar yang bersangkutan dapat diberikan izin cuti kerja selama melaksanakan ibadah tersebut. Demikian surat keterangan ini dibuat dengan sebenarnya.</p>
+      <p style={{fontSize:12,lineHeight:1.8,marginTop:12}}>Akan melaksanakan ibadah umroh dengan jadwal:</p>
+      <InfoGrid items={[['Tgl Berangkat', fmtDate(d.tglBerangkat)],['Tgl Kembali', fmtDate(d.tglPulang)],['Durasi', `${d.durasi} hari`],['Maskapai', d.maskapai]]} />
+      <p style={{fontSize:12,lineHeight:1.8,marginTop:12}}>Demikian surat keterangan ini dibuat dengan sebenarnya.</p>
     </div>);
     case 'bukti_beli_layanan': return (<div>
-      <SectionTitle>Bukti Pembelian Layanan</SectionTitle>
-      <InfoGrid items={[['Nama Jamaah', d.nama],['No. Booking', d.noBooking]]} />
-      <DocTable headers={['No','Layanan','Qty','Harga','Subtotal']} rows={[
-        ['1','Handling Bagasi VIP','1', fmtRp(500000), fmtRp(500000)],['2','City Tour Madinah','1', fmtRp(1500000), fmtRp(1500000)],['3','Laundry 5kg','1', fmtRp(200000), fmtRp(200000)],
-      ]} showTotal totalLabel="TOTAL" totalValue={fmtRp(2200000)} />
+      <SectionTitle>Bukti Pembelian Layanan — {d.nama}</SectionTitle>
+      <InfoGrid items={[['No. Booking', d.noBooking],['NIK', d.nik]]} />
+      <DocTable headers={['No','Layanan','Qty','Harga']} rows={[['1','Layanan Tambahan','1', fmtRp(d.dibayar)]]} showTotal totalLabel="TOTAL" totalValue={fmtRp(d.dibayar)} />
     </div>);
     case 'bukti_bayar_layanan': return (<div>
-      <SectionTitle>Bukti Pembayaran Layanan</SectionTitle>
-      <InfoGrid items={[['Nama', d.nama],['No. Invoice','INV-LYN-001'],['Metode','Cash']]} />
-      <DocTable headers={['Keterangan','Nominal']} rows={[['Pembayaran layanan tambahan', fmtRp(2200000)]]} showTotal totalLabel="LUNAS" totalValue={fmtRp(2200000)} />
+      <SectionTitle>Bukti Pembayaran Layanan — {d.nama}</SectionTitle>
+      <InfoGrid items={[['NIK', d.nik],['No. Booking', d.noBooking]]} />
+      <DocTable headers={['Keterangan','Nominal']} rows={[['Pembayaran layanan', fmtRp(d.dibayar)]]} />
     </div>);
     case 'riwayat_bayar_layanan': return (<div>
-      <SectionTitle>Riwayat Pembayaran Layanan</SectionTitle>
-      <InfoGrid items={[['Nama', d.nama],['No. Booking', d.noBooking]]} />
-      <DocTable headers={['No','Tanggal','Layanan','Nominal','Status']} rows={[
-        ['1','29 Apr 2026','Handling Bagasi VIP', fmtRp(500000),'Lunas'],['2','29 Apr 2026','City Tour Madinah', fmtRp(1500000),'Lunas'],
-      ]} showTotal totalLabel="TOTAL" totalValue={fmtRp(2000000)} />
+      <SectionTitle>Riwayat Pembayaran Layanan — {d.nama}</SectionTitle>
+      <DocTable headers={['No','Tanggal','Nominal','Status']} rows={
+        d.pembayaran?.length > 0 ? d.pembayaran.map((p,i)=>[String(i+1), fmtDate(p.created_at), fmtRp(p.nominal), p.status_pembayaran]) : [['1','-','-','Belum ada']]
+      } />
     </div>);
     case 'surat_perlengkapan': return (<div>
       <p style={{fontSize:12,marginBottom:16}}>Perihal: <strong>Surat Pengeluaran Produk Perlengkapan Umroh</strong></p>
       <SectionTitle>Penerima</SectionTitle>
-      <InfoGrid items={[['Nama', d.nama],['No. Booking', d.noBooking],['Paket', d.paket]]} />
+      <InfoGrid items={[['Nama', d.nama],['NIK', d.nik],['No. Booking', d.noBooking],['Paket', d.paket]]} />
       <SectionTitle>Daftar Perlengkapan</SectionTitle>
       <DocTable headers={['No','Item','Qty','Keterangan']} rows={[
-        ['1','Koper Umroh 24"','1','Warna hitam'],['2','Kain Ihram (Pria)','1','Putih'],['3','Mukena Travel','1','Putih'],['4','Buku Doa & Manasik','1','-'],['5','ID Card & Lanyard','1','Mandala 525'],
+        ['1','Koper Umroh 24"','1','Warna hitam'],['2','Kain Ihram/Mukena','1','Putih'],['3','Buku Doa & Manasik','1','-'],['4','ID Card & Lanyard','1','Mandala 525'],
       ]} />
-      <p style={{fontSize:11,color:'#666',marginTop:16}}>Perlengkapan di atas telah diserahkan dan diterima dalam kondisi baik.</p>
     </div>);
     case 'bukti_bonus_agent': return (<div>
       <SectionTitle>Bukti Pembayaran Bonus Agent</SectionTitle>
-      <InfoGrid items={[['Nama Agent','Budi Santoso'],['Kode Agent','AGT-001'],['No. Rekening','BCA 1234567890'],['Periode','April 2026']]} />
-      <DocTable headers={['No','Jamaah Referral','Paket','Komisi']} rows={[
-        ['1','Ahmad Fauzi','Paket Gold', fmtRp(1500000)],['2','Siti Aminah','Paket Gold', fmtRp(1500000)],
-      ]} showTotal totalLabel="TOTAL BONUS" totalValue={fmtRp(3000000)} />
+      <InfoGrid items={[['Nama Agent', d.nama],['NIK', d.nik],['Periode', new Date().toLocaleDateString('id-ID',{month:'long',year:'numeric'})]]} />
+      <DocTable headers={['No','Jamaah Referral','Komisi']} rows={[['1','(sesuai data referral)', fmtRp(d.dibayar)]]} showTotal totalLabel="TOTAL BONUS" totalValue={fmtRp(d.dibayar)} />
     </div>);
     case 'riwayat_bonus_agent': return (<div>
-      <SectionTitle>Riwayat Pembayaran Bonus Agent</SectionTitle>
-      <InfoGrid items={[['Nama Agent','Budi Santoso'],['Kode Agent','AGT-001']]} />
-      <DocTable headers={['No','Periode','Jumlah Referral','Total Bonus','Status']} rows={[
-        ['1','Maret 2026','3', fmtRp(4500000),'Dibayar'],['2','April 2026','2', fmtRp(3000000),'Dibayar'],
-      ]} showTotal totalLabel="TOTAL KESELURUHAN" totalValue={fmtRp(7500000)} />
+      <SectionTitle>Riwayat Bonus Agent — {d.nama}</SectionTitle>
+      <DocTable headers={['No','Periode','Total Bonus','Status']} rows={[['1', new Date().toLocaleDateString('id-ID',{month:'long',year:'numeric'}), fmtRp(d.dibayar), 'Dibayar']]} />
     </div>);
     default: return <p>Template belum tersedia</p>;
   }
 }
 
-// Get document label/title
 function getDocLabel(id) {
   for (const cat of DOC_CATEGORIES) for (const item of cat.items) if (item.id === id) return item.label;
   return id;
 }
 
 // ══════════════════════════════════════
-// MAIN PANEL
+// MAIN PANEL — now loads real jamaah/booking data
 // ══════════════════════════════════════
 export default function DokumenSuratPanel({ showToast }) {
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [search, setSearch] = useState('');
+  const [bookings, setBookings] = useState([]);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [step, setStep] = useState('list'); // 'list' | 'pick_jamaah' | 'preview'
+
+  // Load all bookings with user data
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.getDokumenList();
+        setBookings(res.data?.data || res.data || []);
+      } catch (e) { console.error(e); }
+      setLoadingBookings(false);
+    })();
+  }, []);
+
+  const handlePickDoc = (docId) => {
+    setSelectedDoc(docId);
+    setStep('pick_jamaah');
+  };
+
+  const handlePickJamaah = (booking) => {
+    setSelectedBooking(booking);
+    setStep('preview');
+  };
+
+  const handleClose = () => {
+    setStep('list');
+    setSelectedDoc(null);
+    setSelectedBooking(null);
+  };
 
   const allDocs = DOC_CATEGORIES.flatMap(c => c.items);
   const filtered = search ? allDocs.filter(d => d.label.toLowerCase().includes(search.toLowerCase())) : null;
 
-  return (<div>
-    <div className="page-header"><h1>📄 Dokumen & Surat</h1><p>Generate 25 jenis dokumen resmi Mandala 525</p></div>
+  // Step 2: Pick jamaah
+  if (step === 'pick_jamaah' && selectedDoc) {
+    return (<div>
+      <div className="page-header" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <div><h1>👤 Pilih Jamaah</h1><p>Untuk: <strong>{getDocLabel(selectedDoc)}</strong></p></div>
+        <button className="btn btn-outline" onClick={handleClose}>← Kembali</button>
+      </div>
+      {loadingBookings ? <div className="loading-page"><div className="spinner"/></div> :
+        bookings.length === 0 ? <div className="empty-state"><div className="icon">👤</div><h3>Belum ada jamaah terdaftar</h3></div> : (
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+          {bookings.map(b => (
+            <div key={b.id} className="card" style={{padding:16,cursor:'pointer',transition:'all 0.2s'}} onClick={()=>handlePickJamaah(b)}
+              onMouseEnter={e=>e.currentTarget.style.borderColor='var(--gold-400)'} onMouseLeave={e=>e.currentTarget.style.borderColor=''}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div>
+                  <div style={{fontSize:16,fontWeight:700,color:'var(--text-primary)'}}>{b.user?.nama || '-'}</div>
+                  <div style={{fontSize:12,color:'var(--text-secondary)'}}>NIK: {b.user?.nik || '-'} • {b.user?.email || '-'}</div>
+                  <div style={{fontSize:12,color:'var(--gold-400)',marginTop:4}}>{b.kode_booking} — {b.jadwal?.paket?.nama_paket || '-'}</div>
+                </div>
+                <div style={{fontSize:24}}>→</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>);
+  }
 
+  // Step 3: Preview
+  if (step === 'preview' && selectedDoc && selectedBooking) {
+    const data = buildData(selectedBooking);
+    return (
+      <DocumentTemplate title={getDocLabel(selectedDoc)} docNo={genDocNo(selectedDoc.toUpperCase().slice(0,3))} date={new Date().toISOString()} onClose={handleClose}>
+        <DocContent docId={selectedDoc} data={data} />
+      </DocumentTemplate>
+    );
+  }
+
+  // Step 1: Pick document
+  return (<div>
+    <div className="page-header"><h1>📄 Dokumen & Surat</h1><p>Pilih dokumen → Pilih jamaah → Preview & Cetak</p></div>
     <div className="card" style={{padding:16,marginBottom:20}}>
       <input className="input-field" placeholder="🔍 Cari dokumen..." value={search} onChange={e=>setSearch(e.target.value)} />
     </div>
-
     {filtered ? (
       <div className="card" style={{padding:20}}>
         <h3 style={{marginBottom:12,fontSize:14}}>Hasil Pencarian ({filtered.length})</h3>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
           {filtered.map(d => (
-            <button key={d.id} className="btn btn-outline" style={{justifyContent:'flex-start',textAlign:'left',padding:'10px 16px'}} onClick={()=>setSelectedDoc(d.id)}>📄 {d.label}</button>
+            <button key={d.id} className="btn btn-outline" style={{justifyContent:'flex-start',textAlign:'left',padding:'10px 16px'}} onClick={()=>handlePickDoc(d.id)}>📄 {d.label}</button>
           ))}
         </div>
       </div>
@@ -242,17 +316,11 @@ export default function DokumenSuratPanel({ showToast }) {
           <h3 style={{marginBottom:12,fontSize:14,color:'var(--gold-300)',borderBottom:'1px solid var(--border-default)',paddingBottom:8}}>{cat.section}</h3>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
             {cat.items.map(d => (
-              <button key={d.id} className="btn btn-outline" style={{justifyContent:'flex-start',textAlign:'left',padding:'10px 16px',fontSize:13}} onClick={()=>setSelectedDoc(d.id)}>📄 {d.label}</button>
+              <button key={d.id} className="btn btn-outline" style={{justifyContent:'flex-start',textAlign:'left',padding:'10px 16px',fontSize:13}} onClick={()=>handlePickDoc(d.id)}>📄 {d.label}</button>
             ))}
           </div>
         </div>
       ))
-    )}
-
-    {selectedDoc && (
-      <DocumentTemplate title={getDocLabel(selectedDoc)} docNo={genDocNo(selectedDoc.toUpperCase().slice(0,3))} date={new Date().toISOString()} onClose={()=>setSelectedDoc(null)}>
-        <DocContent docId={selectedDoc} data={getSampleData(selectedDoc)} />
-      </DocumentTemplate>
     )}
   </div>);
 }
