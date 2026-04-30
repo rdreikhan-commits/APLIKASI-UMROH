@@ -266,7 +266,7 @@ export default function DokumenSuratPanel({ showToast }) {
       </div>
       {loadingBookings ? <div className="loading-page"><div className="spinner"/></div> :
         bookings.length === 0 ? <div className="empty-state"><div className="icon">👤</div><h3>Belum ada jamaah terdaftar</h3></div> : (
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        <div className="grid-2" style={{ gap: 12 }}>
           {bookings.map(b => (
             <div key={b.id} className="card" style={{padding:16,cursor:'pointer',transition:'all 0.2s'}} onClick={()=>handlePickJamaah(b)}
               onMouseEnter={e=>e.currentTarget.style.borderColor='var(--gold-400)'} onMouseLeave={e=>e.currentTarget.style.borderColor=''}>
@@ -304,7 +304,7 @@ export default function DokumenSuratPanel({ showToast }) {
     {filtered ? (
       <div className="card" style={{padding:20}}>
         <h3 style={{marginBottom:12,fontSize:14}}>Hasil Pencarian ({filtered.length})</h3>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+        <div className="grid-2" style={{ gap: 8 }}>
           {filtered.map(d => (
             <button key={d.id} className="btn btn-outline" style={{justifyContent:'flex-start',textAlign:'left',padding:'10px 16px'}} onClick={()=>handlePickDoc(d.id)}>📄 {d.label}</button>
           ))}
@@ -314,7 +314,7 @@ export default function DokumenSuratPanel({ showToast }) {
       DOC_CATEGORIES.map((cat, ci) => (
         <div key={ci} className="card" style={{padding:20,marginBottom:16}}>
           <h3 style={{marginBottom:12,fontSize:14,color:'var(--gold-300)',borderBottom:'1px solid var(--border-default)',paddingBottom:8}}>{cat.section}</h3>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+          <div className="grid-2" style={{ gap: 8 }}>
             {cat.items.map(d => (
               <button key={d.id} className="btn btn-outline" style={{justifyContent:'flex-start',textAlign:'left',padding:'10px 16px',fontSize:13}} onClick={()=>handlePickDoc(d.id)}>📄 {d.label}</button>
             ))}

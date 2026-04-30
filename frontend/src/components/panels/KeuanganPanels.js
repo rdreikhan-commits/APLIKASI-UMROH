@@ -10,33 +10,81 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day:'num
 // PENGELUARAN PANEL
 // ══════════════════════════════════════
 export function PengeluaranPanel({ showToast }) {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filterKat, setFilterKat] = useState('');
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await api.pengeluaran.list();
+      setData(res.data || []);
+    } catch { showToast('Gagal memuat', 'error'); }
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const filtered = filterKat ? data.filter(d => d.kategori === filterKat) : data;
+
+  const exportCSV = () => {
+    const header = "Tanggal,Kategori,Deskripsi,Nominal,Jadwal\n";
+    const rows = filtered.map(d => `${d.tanggal},${d.kategori},"${d.deskripsi}",${d.nominal},"${d.jadwal?.paket?.nama_paket || ''}"`).join("\n");
+    const blob = new Blob([header + rows], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'pengeluaran.csv'; a.click();
+  };
+
+  const exportPDF = () => {
+    const w = window.open('', '_blank');
+    w.document.write(`<html><head><title>Laporan Pengeluaran</title><style>body{font-family:sans-serif;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;text-align:left}</style></head><body>
+      <h2>Laporan Pengeluaran</h2>
+      <table><tr><th>Tanggal</th><th>Kategori</th><th>Deskripsi</th><th>Nominal</th><th>Jadwal</th></tr>
+      ${filtered.map(d => `<tr><td>${d.tanggal}</td><td>${d.kategori}</td><td>${d.deskripsi}</td><td>Rp ${Number(d.nominal).toLocaleString('id-ID')}</td><td>${d.jadwal?.paket?.nama_paket||'-'}</td></tr>`).join('')}
+      </table></body></html>`);
+    w.document.close();
+    setTimeout(() => w.print(), 500);
+  };
+
   return (
-    <CrudPanel
-      title="Pengeluaran"
-      subtitle="Kelola catatan pengeluaran operasional"
-      icon="📉"
-      apiClient={api.pengeluaran}
-      showToast={showToast}
-      columns={[
-        { key: 'tanggal', label: 'Tanggal', render: i => formatDate(i.tanggal) },
-        { key: 'kategori', label: 'Kategori', render: i => <span className="badge badge-pending">{(i.kategori||'').toUpperCase()}</span> },
-        { key: 'deskripsi', label: 'Deskripsi' },
-        { key: 'nominal', label: 'Nominal', render: i => <strong style={{color:'var(--red-400)'}}>{formatRp(i.nominal)}</strong> },
-        { key: 'jadwal', label: 'Jadwal', render: i => i.jadwal?.paket?.nama_paket || '-' },
-      ]}
-      formFields={[
-        { name: 'kategori', label: 'Kategori', type: 'select', options: [
-          {value:'operasional',label:'Operasional'},{value:'akomodasi',label:'Akomodasi'},
-          {value:'transportasi',label:'Transportasi'},{value:'konsumsi',label:'Konsumsi'},
-          {value:'visa',label:'Visa'},{value:'handling',label:'Handling'},
-          {value:'gaji',label:'Gaji'},{value:'lainnya',label:'Lainnya'},
-        ]},
-        { name: 'deskripsi', label: 'Deskripsi', placeholder: 'Biaya hotel Makkah 5 malam' },
-        { name: 'nominal', label: 'Nominal (Rp)', type: 'number', placeholder: '5000000' },
-        { name: 'tanggal', label: 'Tanggal', type: 'date' },
-      ]}
-      defaultForm={{ kategori: 'operasional', deskripsi: '', nominal: '', tanggal: '' }}
-    />
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <select className="input-field" value={filterKat} onChange={e => setFilterKat(e.target.value)} style={{ width: 200 }}>
+            <option value="">-- Semua Kategori --</option>
+            {['operasional','akomodasi','transportasi','konsumsi','visa','handling','gaji','lainnya'].map(k => <option key={k} value={k}>{k.toUpperCase()}</option>)}
+          </select>
+          <button className="btn btn-outline" onClick={exportCSV}>📥 Excel (CSV)</button>
+          <button className="btn btn-outline" onClick={exportPDF}>📄 PDF</button>
+        </div>
+      </div>
+      <CrudPanel
+        title="Pengeluaran"
+        subtitle="Kelola catatan pengeluaran operasional"
+        icon="📉"
+        apiClient={api.pengeluaran}
+        showToast={showToast}
+        columns={[
+          { key: 'tanggal', label: 'Tanggal', render: i => formatDate(i.tanggal) },
+          { key: 'kategori', label: 'Kategori', render: i => <span className="badge badge-pending">{(i.kategori||'').toUpperCase()}</span> },
+          { key: 'deskripsi', label: 'Deskripsi' },
+          { key: 'nominal', label: 'Nominal', render: i => <strong style={{color:'var(--red-400)'}}>{formatRp(i.nominal)}</strong> },
+          { key: 'jadwal', label: 'Jadwal', render: i => i.jadwal?.paket?.nama_paket || '-' },
+        ]}
+        formFields={[
+          { name: 'kategori', label: 'Kategori', type: 'select', options: [
+            {value:'operasional',label:'Operasional'},{value:'akomodasi',label:'Akomodasi'},
+            {value:'transportasi',label:'Transportasi'},{value:'konsumsi',label:'Konsumsi'},
+            {value:'visa',label:'Visa'},{value:'handling',label:'Handling'},
+            {value:'gaji',label:'Gaji'},{value:'lainnya',label:'Lainnya'},
+          ]},
+          { name: 'deskripsi', label: 'Deskripsi', placeholder: 'Biaya hotel Makkah 5 malam' },
+          { name: 'nominal', label: 'Nominal (Rp)', type: 'number', placeholder: '5000000' },
+          { name: 'tanggal', label: 'Tanggal', type: 'date' },
+        ]}
+        defaultForm={{ kategori: 'operasional', deskripsi: '', nominal: '', tanggal: '' }}
+      />
+    </div>
   );
 }
 

@@ -196,11 +196,16 @@ textarea.input-field { resize: vertical; min-height: 80px; }
 .badge-diserahkan { background: rgba(16, 185, 129, 0.15); color: var(--emerald-400); }
 
 /* ── TABLE ── */
-.table-container { overflow-x: auto; border-radius: var(--radius-md); }
+.table-container { 
+  overflow-x: auto; 
+  border-radius: var(--radius-md); 
+  -webkit-overflow-scrolling: touch; 
+}
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
+  min-width: 600px; /* Ensures table doesn't squish too much on mobile */
 }
 thead { background: rgba(255, 255, 255, 0.03); }
 th {
@@ -212,6 +217,7 @@ th {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border-default);
+  white-space: nowrap;
 }
 td {
   padding: 12px 16px;
@@ -259,6 +265,12 @@ tr:hover td { background: rgba(255, 255, 255, 0.02); }
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
+}
+
+.grid-2-1 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
 }
 
 .flex-between {
@@ -405,12 +417,19 @@ tr:hover td { background: rgba(255, 255, 255, 0.02); }
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2-1 { grid-template-columns: 1fr; }
   .page-container { padding: 16px; }
   .page-header h1 { font-size: 22px; }
   .flex-between { flex-wrap: wrap; }
+  .modal-overlay { padding: 16px; }
+  .modal-content { padding: 20px; }
+  .card { padding: 16px; }
 }
 @media (max-width: 480px) {
   .grid-4 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-2-1 { grid-template-columns: 1fr; }
 }
 
 /* ── NAVBAR ── */
@@ -549,10 +568,19 @@ tr:hover td { background: rgba(255, 255, 255, 0.02); }
 
 @media (max-width: 768px) {
   .dashboard-layout { flex-direction: column; }
-  .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-default); padding: 12px; }
-  .sidebar-menu { display: flex; overflow-x: auto; gap: 4px; }
+  .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-default); padding: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch;}
+  .sidebar::-webkit-scrollbar { display: none; }
+  .sidebar { -ms-overflow-style: none; scrollbar-width: none; }
+  
+  .sidebar-menu { display: flex; gap: 8px; flex-wrap: nowrap; }
+  .sidebar-menu li a { white-space: nowrap; padding: 8px 16px; font-size: 13px; margin-bottom: 0; }
   .sidebar-section { display: none; }
-  .main-content { padding: 16px; }
+  .main-content { padding: 16px 12px; }
+  
+  /* Navbar mobile */
+  .navbar-inner { padding: 0 12px; }
+  .navbar-brand { font-size: 16px; }
+  .navbar-user .user-info { display: none; } /* hide name on mobile */
 }
 
 /* ── DASHBOARD OVERVIEW ── */

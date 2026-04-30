@@ -202,7 +202,7 @@ export default function OverviewPanel({ showToast }) {
       </div>
 
       {/* Charts Row 1: Booking Trend + Paket Distribution */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 20 }}>
+      <div className="grid-2-1" style={{ marginBottom: 20 }}>
         <div className="card" style={{ padding: 24 }}>
           <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
             📊 Tren Booking ({PERIODS.find(p => p.key === period)?.label})
@@ -224,7 +224,7 @@ export default function OverviewPanel({ showToast }) {
       </div>
 
       {/* Charts Row 2: Cash Flow + Booking Status */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 20 }}>
+      <div className="grid-2-1" style={{ marginBottom: 20 }}>
         <div className="card" style={{ padding: 24 }}>
           <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 700 }}>
             💰 Arus Kas ({PERIODS.find(p => p.key === period)?.label})
@@ -246,7 +246,7 @@ export default function OverviewPanel({ showToast }) {
       </div>
 
       {/* Charts Row 3: Pengeluaran Kategori + Jadwal Terdekat */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div className="grid-2" style={{ gap: 20 }}>
         {pengeluaranKatData && (
           <div className="card" style={{ padding: 24 }}>
             <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 700 }}>📉 Pengeluaran per Kategori</h3>

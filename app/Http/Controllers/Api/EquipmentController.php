@@ -10,6 +10,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\PerlengkapanLog;
+use App\Models\PengajuanPerlengkapan;
 
 /**
  * =====================================================
@@ -437,6 +439,88 @@ class EquipmentController extends Controller
                 'total_low_stock'       => $laporan->where('is_low_stock', true)->count(),
                 'total_pending_overall' => $laporan->sum('total_pending'),
             ],
+        ]);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // STOK LOG (Manual Edit Stok dengan Realtime Tracking)
+    // ════════════════════════════════════════════════════════════════
+    public function storeLog(Request $request, $id): JsonResponse
+    {
+        $perlengkapan = MasterPerlengkapan::findOrFail($id);
+        $validated = $request->validate([
+            'jenis_log' => 'required|in:masuk,keluar,rusak,hilang,pinjam',
+            'qty' => 'required|integer|min:1',
+            'catatan' => 'nullable|string',
+        ]);
+
+        DB::transaction(function() use ($perlengkapan, $validated, $id) {
+            $validated['perlengkapan_id'] = $id;
+            PerlengkapanLog::create($validated);
+            
+            if ($validated['jenis_log'] === 'masuk') {
+                $perlengkapan->increment('stok_gudang', $validated['qty']);
+            } else {
+                if ($perlengkapan->stok_gudang < $validated['qty']) {
+                    throw new \Exception('Stok tidak mencukupi untuk dikeluarkan/hilang/rusak.');
+                }
+                $perlengkapan->decrement('stok_gudang', $validated['qty']);
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Log stok berhasil ditambahkan & stok terupdate.',
+            'data' => $perlengkapan->fresh()
+        ]);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // PENGAJUAN PERLENGKAPAN (Keuangan & Manager Integration)
+    // ════════════════════════════════════════════════════════════════
+    public function pengajuanIndex(): JsonResponse
+    {
+        $data = PengajuanPerlengkapan::orderBy('created_at', 'desc')->get();
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
+
+    public function pengajuanStore(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'jenis_barang' => 'required|string',
+            'qty' => 'required|integer|min:1',
+            'harga_satuan' => 'required|numeric|min:0',
+            'catatan' => 'nullable|string'
+        ]);
+
+        $validated['total_harga'] = $validated['qty'] * $validated['harga_satuan'];
+        $validated['status'] = 'pending'; // await manager ACC
+
+        $pengajuan = PengajuanPerlengkapan::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengajuan berhasil dikirim, menunggu ACC Manager.',
+            'data' => $pengajuan
+        ]);
+    }
+
+    public function pengajuanUpdateStatus(Request $request, $id): JsonResponse
+    {
+        $pengajuan = PengajuanPerlengkapan::findOrFail($id);
+        $validated = $request->validate([
+            'status' => 'required|in:pending,acc_manager,dicairkan,diambil'
+        ]);
+
+        $pengajuan->update(['status' => $validated['status']]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status pengajuan diupdate menjadi ' . $validated['status'],
+            'data' => $pengajuan
         ]);
     }
 }

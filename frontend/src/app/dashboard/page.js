@@ -8,6 +8,9 @@ import OverviewPanel from '@/components/panels/OverviewPanel';
 import { MaskapaiPanel, HotelPanel, AgentPanel, KaryawanPanel, MitraPanel, LayananPanel } from '@/components/panels/MasterDataPanels';
 import { PengeluaranPanel, PemasukanPanel, BonusAgentPanel, LaporanKeuanganPanel } from '@/components/panels/KeuanganPanels';
 import DokumenSuratPanel from '@/components/panels/DokumenSuratPanel';
+import ManasikAdminPanel from '@/components/panels/ManasikAdminPanel';
+import { InventoryPanel, DistribusiPanel, PengajuanPanel } from '@/components/panels/AdminPerlengkapanPanels';
+import { DataDiriPanel, TagihanPanel, ManasikJamaahPanel } from '@/components/panels/JamaahPanels';
 import api from '@/lib/api';
 
 const formatRp = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
@@ -91,50 +94,76 @@ function JadwalSholat() {
 }
 
 // ══════════════════════════════════════
-// JAMAAH DASHBOARD
+// JAMAAH DASHBOARD — with tabs
 // ══════════════════════════════════════
 function JamaahDashboard({ user, showToast }) {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('beranda');
   const load = () => { api.getMyBookings().then(r => { setBookings(r.data || []); setLoading(false); }).catch(() => setLoading(false)); };
   useEffect(load, []);
+
   if (loading) return <div className="loading-page"><div className="spinner" /><span>Memuat...</span></div>;
+
+  const tabs = [
+    { id: 'beranda', icon: '🏠', label: 'Beranda' },
+    { id: 'tagihan', icon: '💳', label: 'Tagihan' },
+    { id: 'datadiri', icon: '📝', label: 'Data Diri' },
+    { id: 'manasik', icon: '📖', label: 'Manasik' },
+  ];
+
   return (
     <div>
       <div className="page-header"><h1>Dashboard Jamaah</h1><p>Selamat datang, {user.nama}</p></div>
 
-      {/* Jadwal Sholat Realtime */}
-      <JadwalSholat />
-
-      <div className="grid-4" style={{ marginBottom: 32 }}>
-        {[
-          { icon: '📋', val: bookings.length, label: 'Total Booking', color: 'gold' },
-          { icon: '✅', val: bookings.filter(b => b.status === 'confirmed').length, label: 'Confirmed', color: 'emerald' },
-          { icon: '⏳', val: bookings.filter(b => ['pending', 'waiting_payment'].includes(b.status)).length, label: 'Menunggu', color: 'blue' },
-          { icon: '💰', val: formatRp(bookings.reduce((s, b) => s + Number(b.total_dibayar || 0), 0)), label: 'Total Dibayar', color: 'purple' },
-        ].map((s, i) => (
-          <div key={i} className="card stat-card"><div className={`stat-icon ${s.color}`}>{s.icon}</div>
-            <div><div className="stat-value" style={{ fontSize: s.color === 'purple' ? 18 : 28 }}>{s.val}</div><div className="stat-label">{s.label}</div></div></div>
+      {/* Tab Navigation */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+        {tabs.map(t => (
+          <button key={t.id} className={`btn btn-sm ${tab === t.id ? 'btn-gold' : 'btn-outline'}`}
+            onClick={() => setTab(t.id)} style={{ fontSize: 13 }}>
+            {t.icon} {t.label}
+          </button>
         ))}
       </div>
-      {bookings.length === 0 ? (
-        <div className="empty-state"><div className="icon">📋</div><h3>Belum ada booking</h3><p>Kunjungi katalog untuk booking</p>
-          <a href="/katalog" className="btn btn-gold" style={{ marginTop: 16 }}>Lihat Katalog →</a></div>
-      ) : (
-        <div className="table-container card" style={{ padding: 0 }}>
-          <table><thead><tr><th>Kode</th><th>Paket</th><th>Berangkat</th><th>Status</th><th>Dokumen</th><th>Pembayaran</th><th>Perlengkapan</th></tr></thead>
-            <tbody>{bookings.map(b => (
-              <tr key={b.id}>
-                <td><strong style={{ color: 'var(--gold-400)' }}>{b.kode_booking}</strong></td>
-                <td>{b.jadwal?.paket?.nama_paket || '-'}</td><td>{formatDate(b.jadwal?.tanggal_berangkat)}</td>
-                <td><span className={badgeClass(b.status)}>{b.status}</span></td>
-                <td><span className={badgeClass(b.status_dokumen)}>{b.status_dokumen}</span></td>
-                <td>{formatRp(b.total_dibayar)} / {formatRp(b.total_harga)}</td>
-                <td>{b.distribusi_perlengkapan?.filter(d => d.status_penyerahan === 'diserahkan').length || 0}/{b.distribusi_perlengkapan?.length || 0}</td>
-              </tr>
-            ))}</tbody></table>
+
+      {/* Tab Content */}
+      {tab === 'beranda' && (
+        <div>
+          <JadwalSholat />
+          <div className="grid-4" style={{ marginBottom: 32 }}>
+            {[
+              { icon: '📋', val: bookings.length, label: 'Total Booking', color: 'gold' },
+              { icon: '✅', val: bookings.filter(b => b.status === 'confirmed').length, label: 'Confirmed', color: 'emerald' },
+              { icon: '⏳', val: bookings.filter(b => ['pending', 'waiting_payment'].includes(b.status)).length, label: 'Menunggu', color: 'blue' },
+              { icon: '💰', val: formatRp(bookings.reduce((s, b) => s + Number(b.total_dibayar || 0), 0)), label: 'Total Dibayar', color: 'purple' },
+            ].map((s, i) => (
+              <div key={i} className="card stat-card"><div className={`stat-icon ${s.color}`}>{s.icon}</div>
+                <div><div className="stat-value" style={{ fontSize: s.color === 'purple' ? 18 : 28 }}>{s.val}</div><div className="stat-label">{s.label}</div></div></div>
+            ))}
+          </div>
+          {bookings.length === 0 ? (
+            <div className="empty-state"><div className="icon">📋</div><h3>Belum ada booking</h3><p>Kunjungi katalog untuk booking</p>
+              <a href="/katalog" className="btn btn-gold" style={{ marginTop: 16 }}>Lihat Katalog →</a></div>
+          ) : (
+            <div className="table-container card" style={{ padding: 0 }}>
+              <table><thead><tr><th>Kode</th><th>Paket</th><th>Berangkat</th><th>Status</th><th>Dokumen</th><th>Pembayaran</th><th>Perlengkapan</th></tr></thead>
+                <tbody>{bookings.map(b => (
+                  <tr key={b.id}>
+                    <td><strong style={{ color: 'var(--gold-400)' }}>{b.kode_booking}</strong></td>
+                    <td>{b.jadwal?.paket?.nama_paket || '-'}</td><td>{formatDate(b.jadwal?.tanggal_berangkat)}</td>
+                    <td><span className={badgeClass(b.status)}>{b.status}</span></td>
+                    <td><span className={badgeClass(b.status_dokumen)}>{b.status_dokumen}</span></td>
+                    <td>{formatRp(b.total_dibayar)} / {formatRp(b.total_harga)}</td>
+                    <td>{b.distribusi_perlengkapan?.filter(d => d.status_penyerahan === 'diserahkan').length || 0}/{b.distribusi_perlengkapan?.length || 0}</td>
+                  </tr>
+                ))}</tbody></table>
+            </div>
+          )}
         </div>
       )}
+      {tab === 'tagihan' && <TagihanPanel bookings={bookings} showToast={showToast} onReload={load} />}
+      {tab === 'datadiri' && <DataDiriPanel user={user} showToast={showToast} onUpdate={load} />}
+      {tab === 'manasik' && <ManasikJamaahPanel bookings={bookings} />}
     </div>
   );
 }
@@ -427,54 +456,7 @@ function PembayaranPanel({ showToast }) {
   </div>);
 }
 
-// ══════════════════════════════════════
-// ADMIN PERLENGKAPAN — Inventory
-// ══════════════════════════════════════
-function InventoryPanel({ showToast }) {
-  const [inventory, setInventory] = useState([]); const [loading, setLoading] = useState(true);
-  const load = async () => { setLoading(true); try { const inv = await api.getMasterPerlengkapan(); setInventory(inv.data || []); } catch (e) { showToast('Gagal', 'error'); } setLoading(false); };
-  useEffect(() => { load(); }, []);
-  if (loading) return <div className="loading-page"><div className="spinner" /></div>;
-  return (<div>
-    <div className="page-header"><h1>📦 Inventory</h1><p>Stok perlengkapan jamaah</p></div>
-    <div className="grid-3">{inventory.map(item => (
-      <div key={item.id} className="card card-gold">
-        <div style={{ fontSize: 12, color: 'var(--gold-400)', fontWeight: 600, marginBottom: 4 }}>{item.kode_barang}</div>
-        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>{item.nama_barang}</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div><div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Stok</div><div style={{ fontSize: 28, fontWeight: 800, color: item.stok_gudang <= item.stok_minimum ? 'var(--red-400)' : 'var(--emerald-400)' }}>{item.stok_gudang}</div></div>
-          <div style={{ textAlign: 'right' }}><div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Min</div><div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-secondary)' }}>{item.stok_minimum}</div></div>
-        </div>
-        {item.stok_gudang <= item.stok_minimum && <div style={{ marginTop: 8, padding: '6px 10px', background: 'rgba(239,68,68,0.1)', borderRadius: 8, fontSize: 12, color: 'var(--red-400)', fontWeight: 600 }}>⚠️ Stok Rendah!</div>}
-      </div>))}</div>
-  </div>);
-}
-
-function DistribusiPanel({ showToast }) {
-  const [distribusi, setDistribusi] = useState([]); const [loading, setLoading] = useState(true);
-  const load = async () => { setLoading(true); try { const dist = await api.getDistribusiList(); setDistribusi(dist.data?.data || dist.data || []); } catch (e) { showToast('Gagal', 'error'); } setLoading(false); };
-  useEffect(() => { load(); }, []);
-  const handleHandover = async (id) => { if (!confirm('Serahkan barang ini?')) return; try { const res = await api.handoverEquipment(id, { status_penyerahan: 'diserahkan' }); showToast(res.message || 'Diserahkan!'); if (res.low_stock_warning) showToast(res.low_stock_warning, 'error'); load(); } catch (err) { showToast(err.message || 'Gagal', 'error'); } };
-  const handleBatch = async (bookingId) => { if (!confirm('Serahkan SEMUA?')) return; try { const res = await api.batchHandover({ booking_id: bookingId, status_penyerahan: 'diserahkan' }); showToast(res.message || 'Berhasil!'); load(); } catch (err) { showToast(err.message || 'Gagal', 'error'); } };
-  if (loading) return <div className="loading-page"><div className="spinner" /></div>;
-  return (<div>
-    <div className="page-header"><h1>🎒 Distribusi</h1><p>Distribusi perlengkapan jamaah</p></div>
-    {distribusi.length === 0 ? (<div className="empty-state"><div className="icon">🎒</div><h3>Belum ada distribusi</h3><p>Distribusi muncul setelah booking dikonfirmasi</p></div>) :
-      distribusi.map(booking => (<div key={booking.id} className="card" style={{ marginBottom: 16 }}>
-        <div className="flex-between" style={{ marginBottom: 16 }}>
-          <div><div style={{ fontSize: 14, color: 'var(--gold-400)', fontWeight: 700 }}>{booking.kode_booking}</div><div style={{ fontSize: 16, fontWeight: 600 }}>{booking.user?.nama}</div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{booking.jadwal?.kode_jadwal} • {formatDate(booking.jadwal?.tanggal_berangkat)}</div></div>
-          <button className="btn btn-sm btn-gold" onClick={() => handleBatch(booking.id)}>Serahkan Semua</button>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 8 }}>
-          {booking.distribusi_perlengkapan?.map(d => (<div key={d.id} style={{ padding: '10px 14px', background: 'var(--bg-glass)', borderRadius: 8, border: '1px solid var(--border-default)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div><div style={{ fontSize: 13, fontWeight: 600 }}>{d.perlengkapan?.nama_barang}</div><span className={badgeClass(d.status_penyerahan)} style={{ marginTop: 4 }}>{d.status_penyerahan}</span></div>
-            {d.status_penyerahan === 'pending' && <button className="btn btn-sm btn-success" onClick={() => handleHandover(d.id)}>✓</button>}
-          </div>))}
-        </div>
-      </div>))}
-  </div>);
-}
+// Inline panels removed. Imported from AdminPerlengkapanPanels
 
 // ══════════════════════════════════════
 // MAIN DASHBOARD PAGE
@@ -491,7 +473,7 @@ export default function DashboardPage() {
     if (!u) { router.push('/login'); return; }
     setUser(u);
     // Set default menu
-    const defaults = { admin_travel: 'overview', admin_keuangan: 'overview', admin_perlengkapan: 'inventory' };
+    const defaults = { admin_travel: 'overview', admin_keuangan: 'overview', admin_perlengkapan: 'inventory', manager: 'pengajuan' };
     setActiveMenu(defaults[u.role] || '');
     setLoading(false);
   }, []);
@@ -517,6 +499,7 @@ export default function DashboardPage() {
     paket: <PaketPanel showToast={showToast} />,
     jadwal: <JadwalPanel showToast={showToast} />,
     dokumen: <DokumenPanel showToast={showToast} />,
+    manasik: <ManasikAdminPanel showToast={showToast} />,
     maskapai: <MaskapaiPanel showToast={showToast} />,
     hotel: <HotelPanel showToast={showToast} />,
     agent: <AgentPanel showToast={showToast} />,
@@ -532,6 +515,7 @@ export default function DashboardPage() {
     // Admin Perlengkapan
     inventory: <InventoryPanel showToast={showToast} />,
     distribusi: <DistribusiPanel showToast={showToast} />,
+    pengajuan: <PengajuanPanel showToast={showToast} role={user?.role} />,
     // Dokumen & Surat
     surat: <DokumenSuratPanel showToast={showToast} />,
   };

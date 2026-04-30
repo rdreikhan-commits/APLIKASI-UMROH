@@ -7,6 +7,7 @@ export default function Sidebar({ role, activeMenu, onMenuChange }) {
     { id: 'paket', icon: '📦', label: 'Paket Umroh' },
     { id: 'jadwal', icon: '📅', label: 'Jadwal' },
     { id: 'dokumen', icon: '📄', label: 'Dokumen' },
+    { id: 'manasik', icon: '📖', label: 'Modul Manasik' },
     { section: 'Master Data' },
     { id: 'maskapai', icon: '✈️', label: 'Maskapai' },
     { id: 'hotel', icon: '🏨', label: 'Hotel' },
@@ -24,6 +25,7 @@ export default function Sidebar({ role, activeMenu, onMenuChange }) {
     { id: 'pembayaran', icon: '💳', label: 'Pembayaran' },
     { id: 'pemasukan', icon: '📈', label: 'Pemasukan' },
     { id: 'pengeluaran', icon: '📉', label: 'Pengeluaran' },
+    { id: 'pengajuan', icon: '📋', label: 'Pencairan Pengajuan' },
     { section: 'Agent' },
     { id: 'bonus', icon: '🎁', label: 'Bonus Agent' },
     { section: 'Laporan' },
@@ -34,12 +36,19 @@ export default function Sidebar({ role, activeMenu, onMenuChange }) {
     { section: 'Perlengkapan' },
     { id: 'inventory', icon: '📦', label: 'Inventory' },
     { id: 'distribusi', icon: '🎒', label: 'Distribusi' },
+    { id: 'pengajuan', icon: '📋', label: 'Pengajuan Barang' },
+  ];
+
+  const managerMenus = [
+    { section: 'Manager' },
+    { id: 'pengajuan', icon: '📋', label: 'ACC Pengajuan Barang' },
   ];
 
   const menuMap = {
     admin_travel: adminTravelMenus,
     admin_keuangan: adminKeuanganMenus,
     admin_perlengkapan: adminPerlengkapanMenus,
+    manager: managerMenus,
   };
 
   const menus = menuMap[role];

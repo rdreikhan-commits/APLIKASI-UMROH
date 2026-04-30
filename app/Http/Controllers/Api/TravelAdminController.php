@@ -11,6 +11,7 @@ use App\Models\Pengeluaran;
 use App\Models\Pemasukan;
 use App\Models\Agent;
 use App\Models\User;
+use App\Models\Manasik;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -469,6 +470,87 @@ class TravelAdminController extends Controller
                 'jadwal_terdekat' => $jadwalTerdekat,
                 'period' => $period,
             ],
+        ]);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // MODUL MANASIK
+    // ════════════════════════════════════════════════════════════════
+
+    public function manasikIndex(Request $request): JsonResponse
+    {
+        $query = Manasik::with('jadwal.paket')->orderBy('jadwal_id')->orderBy('urutan');
+        if ($request->has('jadwal_id')) {
+            $query->where('jadwal_id', $request->jadwal_id);
+        }
+        return response()->json([
+            'success' => true,
+            'data'    => $query->get(),
+        ]);
+    }
+
+    public function manasikStore(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'jadwal_id' => 'required|exists:jadwal,id',
+            'judul' => 'required|string|max:255',
+            'konten' => 'nullable|string',
+            'file' => 'nullable|file|mimes:pdf,jpg,png|max:5120',
+            'urutan' => 'required|integer',
+            'jadwal_detail' => 'nullable|string',
+        ]);
+
+        if ($request->hasFile('file')) {
+            $validated['file_path'] = $request->file('file')->store('manasik', 'public');
+        }
+
+        $manasik = Manasik::create($validated);
+        return response()->json([
+            'success' => true,
+            'message' => 'Materi manasik berhasil ditambahkan.',
+            'data'    => $manasik,
+        ], 201);
+    }
+
+    public function manasikUpdate(Request $request, $id): JsonResponse
+    {
+        $manasik = Manasik::findOrFail($id);
+        $validated = $request->validate([
+            'judul' => 'sometimes|string|max:255',
+            'konten' => 'nullable|string',
+            'file' => 'nullable|file|mimes:pdf,jpg,png|max:5120',
+            'urutan' => 'sometimes|integer',
+            'jadwal_detail' => 'nullable|string',
+        ]);
+
+        if ($request->hasFile('file')) {
+            $validated['file_path'] = $request->file('file')->store('manasik', 'public');
+        }
+
+        $manasik->update($validated);
+        return response()->json([
+            'success' => true,
+            'message' => 'Materi manasik berhasil diupdate.',
+            'data'    => $manasik,
+        ]);
+    }
+
+    public function manasikDestroy($id): JsonResponse
+    {
+        $manasik = Manasik::findOrFail($id);
+        $manasik->delete();
+        return response()->json([
+            'success' => true,
+            'message' => 'Materi manasik berhasil dihapus.',
+        ]);
+    }
+
+    public function manasikByJadwal($jadwalId): JsonResponse
+    {
+        $materi = Manasik::where('jadwal_id', $jadwalId)->orderBy('urutan')->get();
+        return response()->json([
+            'success' => true,
+            'data'    => $materi,
         ]);
     }
 }

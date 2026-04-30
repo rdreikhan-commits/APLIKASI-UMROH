@@ -75,6 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/bookings', [BookingController::class, 'checkout']);
         Route::post('/bookings/{kodeBooking}/bayar', [BookingController::class, 'uploadBuktiPembayaran']);
         Route::post('/bookings/{kodeBooking}/cancel', [BookingController::class, 'cancel']);
+        Route::get('/manasik/{jadwalId}', [TravelAdminController::class, 'manasikByJadwal']);
     });
 
     // ═════════════════════════════════════════
@@ -103,6 +104,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Dashboard Stats
         Route::get('/dashboard-stats', [TravelAdminController::class, 'dashboardStats']);
+
+        // Manasik CRUD
+        Route::get('/manasik', [TravelAdminController::class, 'manasikIndex']);
+        Route::post('/manasik', [TravelAdminController::class, 'manasikStore']);
+        Route::put('/manasik/{id}', [TravelAdminController::class, 'manasikUpdate']);
+        Route::delete('/manasik/{id}', [TravelAdminController::class, 'manasikDestroy']);
     });
 
     // ═════════════════════════════════════════
@@ -132,6 +139,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/master', [EquipmentController::class, 'store']);
         Route::put('/master/{id}', [EquipmentController::class, 'update']);
         Route::delete('/master/{id}', [EquipmentController::class, 'destroy']);
+
+        // Stok Log / Edit Stok
+        Route::post('/master/{id}/log', [EquipmentController::class, 'storeLog']);
+        
+        // Pengajuan Perlengkapan
+        Route::get('/pengajuan', [EquipmentController::class, 'pengajuanIndex']);
+        Route::post('/pengajuan', [EquipmentController::class, 'pengajuanStore']);
+        Route::put('/pengajuan/{id}/status', [EquipmentController::class, 'pengajuanUpdateStatus']);
 
         // Distribusi Perlengkapan
         Route::get('/distribusi', [EquipmentController::class, 'distribusiList']);
