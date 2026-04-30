@@ -16,7 +16,7 @@ class User extends Authenticatable
         'role', 'nik', 'no_paspor', 'nama', 'email', 'password', 'no_hp',
         'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'alamat',
         'foto_ktp_path', 'foto_paspor_path', 'foto_buku_nikah_path',
-        'status_dokumen',
+        'status_dokumen', 'google_id',
     ];
 
     protected $hidden = ['password', 'remember_token'];
