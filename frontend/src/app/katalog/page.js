@@ -51,8 +51,29 @@ export default function KatalogPage() {
           <div className="empty-state"><div className="icon">📋</div><h3>Belum ada jadwal tersedia</h3></div>
         ) : (
           <div className="grid-2">
-            {jadwal.map(j => (
-              <div key={j.id} className="card card-gold" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {jadwal.map(j => {
+              const defaultImage = j.paket?.tipe === 'vip' ? 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&q=80&w=800' : 'https://images.unsplash.com/photo-1591414443217-062254e4f5fc?auto=format&fit=crop&q=80&w=800';
+              const imageUrl = j.paket?.gambar_path ? `http://127.0.0.1:8000${j.paket.gambar_path}` : defaultImage;
+
+              return (
+              <div key={j.id} className="card card-gold" style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '20px' }}>
+                
+                {/* Gambar Paket */}
+                <div style={{
+                  width: '100%',
+                  height: '220px',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  marginBottom: '8px',
+                  backgroundColor: '#2a2a2a'
+                }}>
+                  <img src={imageUrl} alt={j.paket?.nama_paket} style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }} />
+                </div>
+
                 <div className="flex-between">
                   <div>
                     <div style={{ fontSize: 12, color: 'var(--gold-400)', fontWeight: 600 }}>{j.kode_jadwal}</div>
@@ -86,10 +107,11 @@ export default function KatalogPage() {
 
                 <button className="btn btn-gold" style={{ width: '100%' }} disabled={j.sisa_kuota <= 0 || booking}
                   onClick={() => handleBooking(j.id)}>
-                  {j.sisa_kuota <= 0 ? 'Kuota Habis' : booking ? '⏳ Proses...' : '🕌 Booking Sekarang'}
+                  {j.sisa_kuota <= 0 ? 'Kuota Habis' : booking ? '⏳ Proses...' : '🕌 Booking Sekarang →'}
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

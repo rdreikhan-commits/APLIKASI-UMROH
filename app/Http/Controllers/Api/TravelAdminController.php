@@ -72,7 +72,13 @@ class TravelAdminController extends Controller
             'harga'         => 'required|numeric|min:0',
             'dp_minimum'    => 'required|numeric|min:0',
             'fasilitas'     => 'nullable|array',
+            'gambar_paket'  => 'nullable|image|max:2048',
         ]);
+
+        if ($request->hasFile('gambar_paket')) {
+            $path = $request->file('gambar_paket')->store('paket', 'public');
+            $validated['gambar_path'] = '/storage/' . $path;
+        }
 
         $paket = PaketUmroh::create($validated);
 
@@ -105,7 +111,13 @@ class TravelAdminController extends Controller
             'dp_minimum'    => 'sometimes|numeric|min:0',
             'fasilitas'     => 'nullable|array',
             'is_active'     => 'sometimes|boolean',
+            'gambar_paket'  => 'nullable|image|max:2048',
         ]);
+
+        if ($request->hasFile('gambar_paket')) {
+            $path = $request->file('gambar_paket')->store('paket', 'public');
+            $validated['gambar_path'] = '/storage/' . $path;
+        }
 
         $paket->update($validated);
 

@@ -5,10 +5,15 @@ export const metadata = {
   description: "Sistem manajemen perjalanan umroh terintegrasi oleh Mandala Lima Dua Lima Tour & Travel.",
 };
 
+import FloatingWidgets from "@/components/FloatingWidgets";
+
 export default function RootLayout({ children }) {
   return (
     <html lang="id">
-      <body>{children}</body>
+      <body>
+        {children}
+        <FloatingWidgets />
+      </body>
     </html>
   );
 }

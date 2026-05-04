@@ -11,6 +11,8 @@ import DokumenSuratPanel from '@/components/panels/DokumenSuratPanel';
 import ManasikAdminPanel from '@/components/panels/ManasikAdminPanel';
 import { InventoryPanel, DistribusiPanel, PengajuanPanel } from '@/components/panels/AdminPerlengkapanPanels';
 import { DataDiriPanel, TagihanPanel, ManasikJamaahPanel } from '@/components/panels/JamaahPanels';
+import { KompasKiblatPanel } from '@/components/panels/KompasKiblatPanel';
+import { AkunPanel, RegisterJamaahPanel, ManifestPanel } from '@/components/panels/AkunJamaahPanels';
 import api from '@/lib/api';
 
 const formatRp = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
@@ -30,8 +32,8 @@ function JadwalSholat() {
     // Get location
     const fallback = (lat = -6.2, lng = 106.8, c = 'Jakarta') => {
       setCity(c);
-      fetch(`https://api.aladhan.com/v1/timings/${Math.floor(Date.now()/1000)}?latitude=${lat}&longitude=${lng}&method=20`)
-        .then(r => r.json()).then(d => setTimes(d.data?.timings)).catch(() => {});
+      fetch(`https://api.aladhan.com/v1/timings/${Math.floor(Date.now() / 1000)}?latitude=${lat}&longitude=${lng}&method=20`)
+        .then(r => r.json()).then(d => setTimes(d.data?.timings)).catch(() => { });
     };
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -110,6 +112,7 @@ function JamaahDashboard({ user, showToast }) {
     { id: 'tagihan', icon: '💳', label: 'Tagihan' },
     { id: 'datadiri', icon: '📝', label: 'Data Diri' },
     { id: 'manasik', icon: '📖', label: 'Manasik' },
+    { id: 'kiblat', icon: '🕋', label: 'Arah Kiblat' },
   ];
 
   return (
@@ -164,6 +167,7 @@ function JamaahDashboard({ user, showToast }) {
       {tab === 'tagihan' && <TagihanPanel bookings={bookings} showToast={showToast} onReload={load} />}
       {tab === 'datadiri' && <DataDiriPanel user={user} showToast={showToast} onUpdate={load} />}
       {tab === 'manasik' && <ManasikJamaahPanel bookings={bookings} />}
+      {tab === 'kiblat' && <KompasKiblatPanel />}
     </div>
   );
 }
@@ -194,13 +198,24 @@ function PaketPanel({ showToast }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = { ...form, fasilitas: form.fasilitas?.split(',').map(f => f.trim()) || [] };
+    const formData = new FormData();
+    Object.keys(form).forEach(k => {
+      if (k === 'gambar_paket') {
+        if (form[k]) formData.append('gambar_paket', form[k]);
+      } else if (k === 'fasilitas') {
+        const fasArr = form.fasilitas?.split(',').map(f => f.trim()).filter(Boolean) || [];
+        fasArr.forEach((f, i) => formData.append(`fasilitas[${i}]`, f));
+      } else {
+        if (form[k] !== null && form[k] !== undefined) formData.append(k, form[k]);
+      }
+    });
+
     try {
       if (editId) {
-        await api.updatePaket(editId, payload);
+        await api.updatePaket(editId, formData);
         showToast('Paket berhasil diupdate!');
       } else {
-        await api.createPaket(payload);
+        await api.createPaket(formData);
         showToast('Paket berhasil ditambahkan!');
       }
       setShowForm(false); load();
@@ -247,6 +262,10 @@ function PaketPanel({ showToast }) {
         {[{ n: 'kode_paket', l: 'Kode Paket', p: 'PKT-GOLD-2026' }, { n: 'nama_paket', l: 'Nama Paket', p: 'Paket Gold 2026' }, { n: 'harga', l: 'Harga (Rp)', p: '35000000', t: 'number' }, { n: 'dp_minimum', l: 'DP Minimum', p: '10000000', t: 'number' }, { n: 'durasi_hari', l: 'Durasi (Hari)', p: '9', t: 'number' }, { n: 'maskapai', l: 'Maskapai', p: 'Garuda Indonesia' }, { n: 'hotel_makkah', l: 'Hotel Makkah' }, { n: 'hotel_madinah', l: 'Hotel Madinah' }, { n: 'fasilitas', l: 'Fasilitas (koma)', p: 'Tiket PP, Hotel, Makan 3x' }].map(f => (
           <div className="input-group" key={f.n}><label>{f.l}</label><input className="input-field" type={f.t || 'text'} placeholder={f.p || ''} value={form[f.n] || ''} onChange={e => setForm({ ...form, [f.n]: e.target.value })} required={!['fasilitas', 'maskapai', 'hotel_makkah', 'hotel_madinah'].includes(f.n)} /></div>))}
         <div className="input-group"><label>Tipe</label><select className="input-field" value={form.tipe} onChange={e => setForm({ ...form, tipe: e.target.value })}><option value="reguler">Reguler</option><option value="vip">VIP</option><option value="vvip">VVIP</option></select></div>
+        <div className="input-group">
+          <label>Gambar Paket</label>
+          <input type="file" className="input-field" accept="image/*" onChange={e => setForm({ ...form, gambar_paket: e.target.files[0] })} />
+        </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <button type="submit" className="btn btn-gold">{editId ? 'Update' : 'Simpan'}</button>
           <button type="button" className="btn btn-outline" onClick={() => setShowForm(false)}>Batal</button>
@@ -415,14 +434,14 @@ function PembayaranPanel({ showToast }) {
       </style></head><body>
       <div class="hdr"><img src="/logo-mandala.png" width="64" height="64" style="border-radius:50%;border:2px solid #d4af37"><div><h1>MANDALA 525</h1><p>LIMA DUA LIMA | TOUR & TRAVEL</p></div></div>
       <div class="title"><h2>INVOICE PEMBAYARAN</h2></div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:#555;margin-bottom:20px"><span>No: INV-${kode}</span><span>Tanggal: ${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:#555;margin-bottom:20px"><span>No: INV-${kode}</span><span>Tanggal: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
       <div class="info"><div><span class="l">Nama</span><span class="v">: ${nama}</span></div><div><span class="l">NIK</span><span class="v">: ${nik}</span></div><div><span class="l">Email</span><span class="v">: ${email}</span></div><div><span class="l">No. Booking</span><span class="v">: ${kode}</span></div></div>
       <table><thead><tr><th>No</th><th>Deskripsi</th><th class="r">Jumlah</th></tr></thead><tbody>
       <tr><td>1</td><td>Paket ${paket}</td><td class="r">${formatRp(totalHarga)}</td></tr>
       <tr class="total"><td colspan="2" class="r">TOTAL</td><td class="r">${formatRp(totalHarga)}</td></tr></tbody></table>
-      <div class="info"><div><span class="l">Sudah Dibayar</span><span class="v" style="color:green">: ${formatRp(dibayar)}</span></div><div><span class="l">Sisa</span><span class="v" style="color:${sisa>0?'red':'green'}">: ${formatRp(sisa)}</span></div><div><span class="l">Status</span><span class="v">: ${sisa<=0?'LUNAS ✅':'BELUM LUNAS'}</span></div></div>
+      <div class="info"><div><span class="l">Sudah Dibayar</span><span class="v" style="color:green">: ${formatRp(dibayar)}</span></div><div><span class="l">Sisa</span><span class="v" style="color:${sisa > 0 ? 'red' : 'green'}">: ${formatRp(sisa)}</span></div><div><span class="l">Status</span><span class="v">: ${sisa <= 0 ? 'LUNAS ✅' : 'BELUM LUNAS'}</span></div></div>
       <div class="sig"><div><p style="font-size:12px;color:#666">Disetujui,</p><div class="line"></div><p style="font-weight:700;font-size:12px">Direktur</p></div><div><p style="font-size:12px;color:#666">Penerima,</p><div class="line"></div><p style="font-weight:700;font-size:12px">${nama}</p></div></div>
-      <p class="stamp">Dicetak ${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})} — Dokumen sah tanpa tanda tangan basah</p>
+      <p class="stamp">Dicetak ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} — Dokumen sah tanpa tanda tangan basah</p>
       </body></html>`);
     w.document.close();
     setTimeout(() => w.print(), 500);
@@ -448,7 +467,7 @@ function PembayaranPanel({ showToast }) {
                 <button className="btn btn-sm btn-danger" onClick={() => handleReject(p.id)}>✗ Reject</button>
               </>}
               <button className="btn btn-sm btn-outline" onClick={() => printInvoice(p)} title="Download Invoice">🧾</button>
-              <button className="btn btn-sm" style={{background:'#25D366',color:'#fff',border:'none'}} onClick={() => sendWA(p)} title="Kirim Tagihan WA">💬 WA</button>
+              <button className="btn btn-sm" style={{ background: '#25D366', color: '#fff', border: 'none' }} onClick={() => sendWA(p)} title="Kirim Tagihan WA">💬 WA</button>
             </td>
           </tr>))}</tbody></table>
       </div>
@@ -506,6 +525,9 @@ export default function DashboardPage() {
     karyawan: <KaryawanPanel showToast={showToast} />,
     mitra: <MitraPanel showToast={showToast} />,
     layanan: <LayananPanel showToast={showToast} />,
+    akun: <AkunPanel showToast={showToast} />,
+    register: <RegisterJamaahPanel showToast={showToast} />,
+    manifest: <ManifestPanel showToast={showToast} />,
     // Admin Keuangan
     pembayaran: <PembayaranPanel showToast={showToast} />,
     pemasukan: <PemasukanPanel showToast={showToast} />,

@@ -102,6 +102,12 @@ Route::middleware('auth:sanctum')->group(function () {
         // Manifest
         Route::get('/manifest/{jadwalId}', [TravelAdminController::class, 'manifest']);
 
+        // Akun (User Management & Manual Register)
+        Route::get('/akun', [\App\Http\Controllers\Api\AccountController::class, 'index']);
+        Route::post('/akun', [\App\Http\Controllers\Api\AccountController::class, 'store']);
+        Route::delete('/akun/{id}', [\App\Http\Controllers\Api\AccountController::class, 'destroy']);
+        Route::post('/akun/register-jamaah', [\App\Http\Controllers\Api\AccountController::class, 'manualRegisterJamaah']);
+
         // Dashboard Stats
         Route::get('/dashboard-stats', [TravelAdminController::class, 'dashboardStats']);
 

@@ -15,6 +15,10 @@ export default function Sidebar({ role, activeMenu, onMenuChange }) {
     { id: 'karyawan', icon: '👤', label: 'Karyawan' },
     { id: 'mitra', icon: '🏢', label: 'Mitra' },
     { id: 'layanan', icon: '⭐', label: 'Layanan' },
+    { section: 'Akun & Jamaah' },
+    { id: 'akun', icon: '🔐', label: 'Manajemen Akun' },
+    { id: 'register', icon: '📝', label: 'Daftar Jamaah' },
+    { id: 'manifest', icon: '📋', label: 'Manifest Jamaah' },
     { section: 'Dokumen' },
     { id: 'surat', icon: '🖨️', label: 'Cetak Surat (25)' },
   ];

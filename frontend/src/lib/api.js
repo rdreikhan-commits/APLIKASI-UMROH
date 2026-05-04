@@ -58,7 +58,10 @@ class ApiClient {
     }
 
     // Don't set Content-Type for FormData (browser sets boundary auto)
-    if (!(options.body instanceof FormData)) {
+    if (options.body && !(options.body instanceof FormData) && typeof options.body === 'object') {
+      headers['Content-Type'] = 'application/json';
+      options.body = JSON.stringify(options.body);
+    } else if (options.body && typeof options.body === 'string') {
       headers['Content-Type'] = 'application/json';
     }
 
@@ -171,10 +174,14 @@ class ApiClient {
     return this.request('/admin/travel/paket');
   }
   async createPaket(payload) {
-    return this.request('/admin/travel/paket', { method: 'POST', body: JSON.stringify(payload) });
+    return this.request('/admin/travel/paket', { method: 'POST', body: payload });
   }
   async updatePaket(id, payload) {
-    return this.request(`/admin/travel/paket/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+    if (payload instanceof FormData) {
+      payload.append('_method', 'PUT');
+      return this.request(`/admin/travel/paket/${id}`, { method: 'POST', body: payload });
+    }
+    return this.request(`/admin/travel/paket/${id}`, { method: 'PUT', body: payload });
   }
   async deletePaket(id) {
     return this.request(`/admin/travel/paket/${id}`, { method: 'DELETE' });
