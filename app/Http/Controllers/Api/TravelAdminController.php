@@ -269,8 +269,12 @@ class TravelAdminController extends Controller
      */
     public function dokumenIndex(Request $request): JsonResponse
     {
-        $query = Booking::with('user:id,nama,email,nik,no_paspor,foto_ktp_path,foto_paspor_path,foto_buku_nikah_path')
-            ->with('jadwal:id,kode_jadwal,tanggal_berangkat');
+        $query = Booking::with([
+            'user:id,nama,email,nik,no_paspor,foto_ktp_path,foto_paspor_path,foto_buku_nikah_path,no_hp,alamat',
+            'jadwal:id,kode_jadwal,tanggal_berangkat,tanggal_pulang,paket_id',
+            'jadwal.paket:id,nama_paket,tipe,harga,dp_minimum,maskapai,hotel_makkah,durasi_hari',
+            'pembayaran'
+        ]);
 
         if ($request->has('status_dokumen')) {
             $query->where('status_dokumen', $request->status_dokumen);
