@@ -237,7 +237,7 @@ export function ManifestPanel({ showToast }) {
     if (!id) { setManifest(null); return; }
     setLoading(true);
     api.request(`/admin/travel/manifest/${id}`).then(r => {
-      setManifest(r.data?.jamaah || []);
+      setManifest(r.data?.manifest || []);
       setLoading(false);
     }).catch(err => {
       showToast(err.message || 'Gagal memuat manifest', 'error');
