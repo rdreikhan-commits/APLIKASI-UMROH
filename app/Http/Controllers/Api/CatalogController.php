@@ -67,7 +67,7 @@ class CatalogController extends Controller
      */
     public function jadwalList(Request $request): JsonResponse
     {
-        $query = Jadwal::with('paket:id,nama_paket,kode_paket,tipe,harga,durasi_hari')
+        $query = Jadwal::with('paket:id,nama_paket,kode_paket,tipe,harga,durasi_hari,gambar_path')
             ->available()
             ->upcoming();
 

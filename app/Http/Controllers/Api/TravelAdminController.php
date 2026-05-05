@@ -153,7 +153,7 @@ class TravelAdminController extends Controller
      */
     public function jadwalIndex(Request $request): JsonResponse
     {
-        $query = Jadwal::with('paket:id,nama_paket,kode_paket,tipe,harga')
+        $query = Jadwal::with('paket:id,nama_paket,kode_paket,tipe,harga,gambar_path,durasi_hari')
             ->withCount(['bookings as total_booking'])
             ->withCount(['bookings as confirmed_booking' => function ($q) {
                 $q->where('status', 'confirmed');
