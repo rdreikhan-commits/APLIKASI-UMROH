@@ -9,7 +9,7 @@ export function PromoBannerPanel({ showToast }) {
 
   const load = () => {
     setLoading(true);
-    api.getBanners().then(res => { setBanners(res.data); setLoading(false); }).catch(() => setLoading(false));
+    api.getBanners().then(res => { setBanners(Array.isArray(res) ? res : res.data || []); setLoading(false); }).catch(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
 
@@ -101,7 +101,7 @@ export function ArticlePanel({ showToast }) {
 
   const load = () => {
     setLoading(true);
-    api.getArticles().then(res => { setArticles(res.data); setLoading(false); }).catch(() => setLoading(false));
+    api.getArticles().then(res => { setArticles(Array.isArray(res) ? res : res.data || []); setLoading(false); }).catch(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
 

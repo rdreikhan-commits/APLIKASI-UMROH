@@ -9,7 +9,7 @@ export default function BlogList() {
 
   useEffect(() => {
     api.getPublishedArticles().then(res => {
-      setArticles(res.data || []);
+      setArticles(Array.isArray(res) ? res : res.data || []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);

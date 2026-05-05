@@ -16,9 +16,9 @@ export default function Home() {
       api.getActiveBanners().catch(() => ({ data: [] })),
       api.getPublishedArticles().catch(() => ({ data: [] }))
     ]).then(([resJadwal, resBanners, resArticles]) => {
-      setJadwal(resJadwal.data || []);
-      setBanners(resBanners.data || []);
-      setArticles(resArticles.data || []);
+      setJadwal(Array.isArray(resJadwal) ? resJadwal : resJadwal.data || []);
+      setBanners(Array.isArray(resBanners) ? resBanners : resBanners.data || []);
+      setArticles(Array.isArray(resArticles) ? resArticles : resArticles.data || []);
       setLoading(false);
     });
   }, []);

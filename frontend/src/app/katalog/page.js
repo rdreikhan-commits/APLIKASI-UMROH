@@ -38,7 +38,7 @@ export default function KatalogPage() {
   return (
     <>
       <Navbar />
-      {toast && <Toast {...toast} onClose={() => setToast(null)} />}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="page-container">
         <div className="page-header">
           <h1>Katalog Jadwal Umroh</h1>

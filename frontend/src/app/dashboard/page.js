@@ -548,7 +548,7 @@ export default function DashboardPage() {
   return (
     <>
       <Navbar />
-      {toast && <Toast key={toast.key} {...toast} onClose={() => setToast(null)} />}
+      {toast && <Toast key={toast.key} message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="dashboard-layout">
         <Sidebar role={user?.role} activeMenu={activeMenu} onMenuChange={setActiveMenu} />
         <div className="main-content">
