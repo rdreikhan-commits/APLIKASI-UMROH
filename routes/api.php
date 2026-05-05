@@ -51,6 +51,11 @@ Route::prefix('katalog')->group(function () {
     Route::get('/jadwal/{id}', [CatalogController::class, 'jadwalDetail']);
 });
 
+// Public Banners & Articles
+Route::get('/banners/active', [\App\Http\Controllers\Api\PromoBannerController::class, 'active']);
+Route::get('/articles/published', [\App\Http\Controllers\Api\ArticleController::class, 'published']);
+Route::get('/articles/{slug}', [\App\Http\Controllers\Api\ArticleController::class, 'show']);
+
 
 // ═════════════════════════════════════════════
 // PROTECTED ROUTES (Harus Login — Sanctum)
@@ -116,6 +121,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/manasik', [TravelAdminController::class, 'manasikStore']);
         Route::put('/manasik/{id}', [TravelAdminController::class, 'manasikUpdate']);
         Route::delete('/manasik/{id}', [TravelAdminController::class, 'manasikDestroy']);
+
+        // Promo Banners & Articles
+        Route::get('/banners', [\App\Http\Controllers\Api\PromoBannerController::class, 'index']);
+        Route::post('/banners', [\App\Http\Controllers\Api\PromoBannerController::class, 'store']);
+        Route::put('/banners/{banner}/toggle', [\App\Http\Controllers\Api\PromoBannerController::class, 'toggle']);
+        Route::delete('/banners/{banner}', [\App\Http\Controllers\Api\PromoBannerController::class, 'destroy']);
+        
+        Route::get('/articles', [\App\Http\Controllers\Api\ArticleController::class, 'index']);
+        Route::post('/articles', [\App\Http\Controllers\Api\ArticleController::class, 'store']);
+        Route::delete('/articles/{article}', [\App\Http\Controllers\Api\ArticleController::class, 'destroy']);
     });
 
     // ═════════════════════════════════════════

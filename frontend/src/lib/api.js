@@ -284,6 +284,20 @@ class ApiClient {
   async getBonusList(p='') { return this.request(`/admin/keuangan/bonus-agent${p?'?'+p:''}`); }
   async bayarBonus(id) { return this.request(`/admin/keuangan/bonus-agent/${id}/bayar`, { method:'POST' }); }
   async getLaporanKeuangan(p='') { return this.request(`/admin/keuangan/laporan/keuangan${p?'?'+p:''}`); }
+
+  // ── PROMO BANNERS ──
+  async getBanners() { return this.request('/admin/travel/banners'); }
+  async getActiveBanners() { return this.request('/banners/active'); }
+  async createBanner(data) { return this.request('/admin/travel/banners', { method: 'POST', body: data }); }
+  async toggleBanner(id) { return this.request(`/admin/travel/banners/${id}/toggle`, { method: 'PUT' }); }
+  async deleteBanner(id) { return this.request(`/admin/travel/banners/${id}`, { method: 'DELETE' }); }
+
+  // ── ARTICLES (BLOG) ──
+  async getArticles() { return this.request('/admin/travel/articles'); }
+  async getPublishedArticles() { return this.request('/articles/published'); }
+  async getArticle(slug) { return this.request(`/articles/${slug}`); }
+  async createArticle(data) { return this.request('/admin/travel/articles', { method: 'POST', body: data }); }
+  async deleteArticle(id) { return this.request(`/admin/travel/articles/${id}`, { method: 'DELETE' }); }
 }
 
 const api = new ApiClient();

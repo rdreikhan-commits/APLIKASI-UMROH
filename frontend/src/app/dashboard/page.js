@@ -13,6 +13,7 @@ import { InventoryPanel, DistribusiPanel, PengajuanPanel } from '@/components/pa
 import { DataDiriPanel, TagihanPanel, ManasikJamaahPanel } from '@/components/panels/JamaahPanels';
 import { KompasKiblatPanel } from '@/components/panels/KompasKiblatPanel';
 import { AkunPanel, RegisterJamaahPanel, ManifestPanel } from '@/components/panels/AkunJamaahPanels';
+import { PromoBannerPanel, ArticlePanel } from '@/components/panels/PromoBlogPanels';
 import api from '@/lib/api';
 
 const formatRp = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
@@ -514,6 +515,8 @@ export default function DashboardPage() {
   const adminPanels = {
     // Dashboard Overview
     overview: <OverviewPanel showToast={showToast} />,
+    promo_banners: <PromoBannerPanel showToast={showToast} />,
+    articles: <ArticlePanel showToast={showToast} />,
     // Admin Travel
     paket: <PaketPanel showToast={showToast} />,
     jadwal: <JadwalPanel showToast={showToast} />,
