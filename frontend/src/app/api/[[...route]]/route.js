@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '../../../../db';
+import { getDb } from '../../../../db';
 import { users } from '../../../../db/schema';
 import { eq } from 'drizzle-orm';
 
@@ -13,9 +13,9 @@ const demoUsers = [
 
 async function seedDatabase() {
   try {
-    const existing = await db.select().from(users).limit(1);
+    const existing = await getDb().select().from(users).limit(1);
     if (existing.length === 0) {
-      await db.insert(users).values(demoUsers);
+      await getDb().insert(users).values(demoUsers);
     }
   } catch (error) {
     console.error('Error seeding database:', error);
@@ -32,7 +32,7 @@ export async function POST(req, { params }) {
 
     try {
       const body = await req.json();
-      const foundUser = await db.select().from(users).where(eq(users.email, body.email));
+      const foundUser = await getDb().select().from(users).where(eq(users.email, body.email));
 
       if (foundUser.length > 0 && foundUser[0].password === body.password) {
         return NextResponse.json({
