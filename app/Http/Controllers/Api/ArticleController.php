@@ -13,18 +13,18 @@ class ArticleController extends Controller
 {
     public function index()
     {
-        return response()->json(Article::with('author:id,name')->latest()->get());
+        return response()->json(Article::with('author:id,nama')->latest()->get());
     }
 
     public function published()
     {
-        return response()->json(Article::with('author:id,name')->where('is_published', true)->latest()->get());
+        return response()->json(['success'=>true,'data'=>Article::with('author:id,nama')->where('is_published', true)->latest()->get()]);
     }
 
     public function show($slug)
     {
-        $article = Article::with('author:id,name')->where('slug', $slug)->firstOrFail();
-        return response()->json($article);
+        $article = Article::with('author:id,nama')->where('slug', $slug)->firstOrFail();
+        return response()->json(['success'=>true,'data'=>$article]);
     }
 
     public function store(Request $request)

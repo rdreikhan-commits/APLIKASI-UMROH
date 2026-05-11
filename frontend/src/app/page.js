@@ -31,34 +31,18 @@ export default function Home() {
       <Navbar />
 
       {/* Hero */}
-      <section style={{
-        background: 'linear-gradient(180deg, rgba(251,191,36,0.06) 0%, var(--bg-primary) 60%)',
-        padding: '80px 24px 60px',
-        textAlign: 'center',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{
-          position: 'absolute', top: '-100px', left: '50%', transform: 'translateX(-50%)',
-          width: '600px', height: '600px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 70%)',
-          pointerEvents: 'none'
-        }} />
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: '700px', margin: '0 auto' }}>
-          <div style={{ fontSize: '64px', marginBottom: '16px' }}>🕌</div>
-          <h1 style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: '48px', fontWeight: 800, lineHeight: 1.1, marginBottom: '16px',
-            background: 'linear-gradient(135deg, #fcd34d, #f59e0b, #d97706)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'
-          }}>
+      <section className="hero-section">
+        <div className="hero-glow" />
+        <div className="hero-inner">
+          <div className="hero-icon">🕌</div>
+          <h1 className="hero-title">
             Perjalanan Suci<br />Dimulai di Sini
           </h1>
-          <p style={{ fontSize: '18px', color: 'var(--text-secondary)', marginBottom: '32px', lineHeight: 1.6 }}>
+          <p className="hero-sub">
             Sistem ERP terintegrasi untuk manajemen Travel Umroh.
             Booking, pembayaran, dokumen, dan perlengkapan dalam satu platform.
           </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <div className="hero-btns">
             <a href="/katalog" className="btn btn-lg btn-gold">Lihat Paket Umroh →</a>
             <a href="/register" className="btn btn-lg btn-outline">Daftar Sekarang</a>
           </div>

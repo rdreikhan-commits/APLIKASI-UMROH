@@ -1,6 +1,12 @@
 'use client';
+import { useEffect } from 'react';
 
-export default function Sidebar({ role, activeMenu, onMenuChange }) {
+export default function Sidebar({ role, activeMenu, onMenuChange, mobileOpen, onMobileClose }) {
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
   const adminTravelMenus = [
     { id: 'overview', icon: '📊', label: 'Dashboard' },
     { section: 'Konten' },
@@ -27,16 +33,14 @@ export default function Sidebar({ role, activeMenu, onMenuChange }) {
   ];
 
   const adminKeuanganMenus = [
-    { id: 'overview', icon: '📊', label: 'Dashboard' },
-    { section: 'Keuangan' },
-    { id: 'pembayaran', icon: '💳', label: 'Pembayaran' },
+    { id: 'laporan', icon: '📊', label: 'Dashboard Keuangan' },
+    { section: 'Transaksi' },
+    { id: 'pembayaran', icon: '💳', label: 'Verifikasi Pembayaran' },
+    { section: 'Catatan Keuangan' },
     { id: 'pemasukan', icon: '📈', label: 'Pemasukan' },
     { id: 'pengeluaran', icon: '📉', label: 'Pengeluaran' },
-    { id: 'pengajuan', icon: '📋', label: 'Pencairan Pengajuan' },
     { section: 'Agent' },
     { id: 'bonus', icon: '🎁', label: 'Bonus Agent' },
-    { section: 'Laporan' },
-    { id: 'laporan', icon: '📊', label: 'Laporan Keuangan' },
   ];
 
   const adminPerlengkapanMenus = [
@@ -61,25 +65,37 @@ export default function Sidebar({ role, activeMenu, onMenuChange }) {
   const menus = menuMap[role];
   if (!menus) return null;
 
+  const handleClick = (id) => {
+    onMenuChange(id);
+    if (onMobileClose) onMobileClose();
+  };
+
   return (
-    <aside className="sidebar">
-      <ul className="sidebar-menu">
-        {menus.map((item, i) =>
-          item.section ? (
-            <li key={`s-${i}`} className="sidebar-section">{item.section}</li>
-          ) : (
-            <li key={item.id}>
-              <a
-                href="#"
-                className={activeMenu === item.id ? 'active' : ''}
-                onClick={e => { e.preventDefault(); onMenuChange(item.id); }}
-              >
-                <span>{item.icon}</span> {item.label}
-              </a>
-            </li>
-          )
-        )}
-      </ul>
-    </aside>
+    <>
+      {mobileOpen && <div className="sidebar-mob-overlay" onClick={onMobileClose} />}
+      <aside className={`sidebar ${mobileOpen ? 'sidebar-mob-open' : ''}`}>
+        <div className="sidebar-mob-header">
+          <span style={{ fontWeight: 700, fontSize: 14 }}>⚙️ Menu Admin</span>
+          <button className="sidebar-mob-close" onClick={onMobileClose}>✕</button>
+        </div>
+        <ul className="sidebar-menu">
+          {menus.map((item, i) =>
+            item.section ? (
+              <li key={`s-${i}`} className="sidebar-section">{item.section}</li>
+            ) : (
+              <li key={item.id}>
+                <a
+                  href="#"
+                  className={activeMenu === item.id ? 'active' : ''}
+                  onClick={e => { e.preventDefault(); handleClick(item.id); }}
+                >
+                  <span>{item.icon}</span> {item.label}
+                </a>
+              </li>
+            )
+          )}
+        </ul>
+      </aside>
+    </>
   );
 }

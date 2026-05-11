@@ -30,11 +30,10 @@ function JadwalSholat() {
 
   useEffect(() => {
     const tick = setInterval(() => setNow(new Date()), 1000);
-    // Get location
     const fallback = (lat = -6.2, lng = 106.8, c = 'Jakarta') => {
       setCity(c);
       fetch(`https://api.aladhan.com/v1/timings/${Math.floor(Date.now() / 1000)}?latitude=${lat}&longitude=${lng}&method=20`)
-        .then(r => r.json()).then(d => setTimes(d.data?.timings)).catch(() => { });
+        .then(r => r.json()).then(d => setTimes(d.data?.timings)).catch(() => {});
     };
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -48,14 +47,13 @@ function JadwalSholat() {
   if (!times) return null;
 
   const prayers = [
-    { name: 'Subuh', icon: '🌅', time: times.Fajr },
-    { name: 'Dzuhur', icon: '☀️', time: times.Dhuhr },
-    { name: 'Ashar', icon: '🌤️', time: times.Asr },
-    { name: 'Maghrib', icon: '🌇', time: times.Maghrib },
-    { name: 'Isya', icon: '🌙', time: times.Isha },
+    { name: 'Subuh', key: 'SUBUH', time: times.Fajr },
+    { name: 'Dzuhur', key: 'DZUHUR', time: times.Dhuhr },
+    { name: 'Ashar', key: 'ASHAR', time: times.Asr },
+    { name: 'Maghrib', key: 'MAGHRIB', time: times.Maghrib },
+    { name: 'Isya', key: 'ISYA', time: times.Isha },
   ];
 
-  // Find next prayer
   const nowMins = now.getHours() * 60 + now.getMinutes();
   let nextIdx = prayers.findIndex(p => {
     const [h, m] = p.time.split(':').map(Number);
@@ -64,33 +62,27 @@ function JadwalSholat() {
   if (nextIdx === -1) nextIdx = 0;
 
   const [nh, nm] = prayers[nextIdx].time.split(':').map(Number);
-  let diffMins = (nh * 60 + nm) - nowMins;
-  if (diffMins < 0) diffMins += 1440;
-  const countH = Math.floor(diffMins / 60);
-  const countM = diffMins % 60;
+  let diffSecs = ((nh * 60 + nm) - nowMins) * 60 - now.getSeconds();
+  if (diffSecs < 0) diffSecs += 86400;
+  const cH = Math.floor(diffSecs / 3600);
+  const cM = Math.floor((diffSecs % 3600) / 60);
+  const cS = diffSecs % 60;
+  const countdown = `-${cH > 0 ? cH + ':' : ''}${String(cM).padStart(2,'0')}:${String(cS).padStart(2,'0')}`;
 
   return (
-    <div className="card" style={{ padding: 20, marginBottom: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700 }}>🕌 Jadwal Sholat — {city}</h3>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{now.toLocaleTimeString('id-ID')}</div>
+    <div className="jm-prayer-section">
+      <div className="jm-section-header">
+        <span className="jm-section-title">🕌 Jadwal Sholat</span>
+        <span className="jm-section-sub">{city}, ID</span>
       </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="jm-prayer-scroll">
         {prayers.map((p, i) => (
-          <div key={i} style={{
-            flex: 1, minWidth: 100, padding: '12px 10px', borderRadius: 12, textAlign: 'center',
-            background: i === nextIdx ? 'linear-gradient(135deg, #d4af37, #b8960c)' : 'var(--bg-glass)',
-            border: i === nextIdx ? 'none' : '1px solid var(--border-default)',
-            color: i === nextIdx ? '#000' : 'inherit',
-          }}>
-            <div style={{ fontSize: 20 }}>{p.icon}</div>
-            <div style={{ fontSize: 12, fontWeight: 700, marginTop: 4 }}>{p.name}</div>
-            <div style={{ fontSize: 16, fontWeight: 800, marginTop: 2 }}>{p.time}</div>
+          <div key={i} className={`jm-prayer-card${i === nextIdx ? ' active' : ''}`}>
+            <div className="jm-prayer-key">{p.key}</div>
+            <div className="jm-prayer-time">{p.time}</div>
+            {i === nextIdx && <div className="jm-prayer-countdown">{countdown}</div>}
           </div>
         ))}
-      </div>
-      <div style={{ textAlign: 'center', marginTop: 12, fontSize: 13, color: 'var(--gold-400)' }}>
-        ⏳ {prayers[nextIdx].name} dalam <strong>{countH > 0 ? `${countH}j ` : ''}{countM}m</strong>
       </div>
     </div>
   );
@@ -103,72 +95,257 @@ function JamaahDashboard({ user, showToast }) {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('beranda');
-  const load = () => { api.getMyBookings().then(r => { setBookings(r.data || []); setLoading(false); }).catch(() => setLoading(false)); };
+
+  const load = () => {
+    api.getMyBookings()
+      .then(r => { setBookings(r.data || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
   useEffect(load, []);
 
   if (loading) return <div className="loading-page"><div className="spinner" /><span>Memuat...</span></div>;
 
-  const tabs = [
-    { id: 'beranda', icon: '🏠', label: 'Beranda' },
-    { id: 'tagihan', icon: '💳', label: 'Tagihan' },
+  const mainBooking = bookings[0] || null;
+  const totalDibayar = bookings.reduce((s, b) => s + Number(b.total_dibayar || 0), 0);
+  const totalHarga   = bookings.reduce((s, b) => s + Number(b.total_harga   || 0), 0);
+  const totalTagihan = Math.max(0, totalHarga - totalDibayar);
+  const payPct = totalHarga > 0 ? Math.round((totalDibayar / totalHarga) * 100) : 0;
+
+  const docPct = mainBooking
+    ? (mainBooking.status_dokumen === 'valid' ? 100
+      : mainBooking.status_dokumen === 'review' ? 70
+      : mainBooking.status_dokumen === 'incomplete' ? 15 : 0)
+    : 0;
+
+  const iconTabs = [
+    { id: 'beranda',  icon: '🏠', label: 'Beranda'   },
+    { id: 'tagihan',  icon: '💳', label: 'Tagihan'   },
     { id: 'datadiri', icon: '📝', label: 'Data Diri' },
-    { id: 'manasik', icon: '📖', label: 'Manasik' },
-    { id: 'kiblat', icon: '🕋', label: 'Arah Kiblat' },
+    { id: 'manasik',  icon: '📖', label: 'Manasik'   },
+    { id: 'kiblat',   icon: '🕋', label: 'Kiblat'    },
   ];
 
-  return (
-    <div>
-      <div className="page-header"><h1>Dashboard Jamaah</h1><p>Selamat datang, {user.nama}</p></div>
+  const bottomNav = [
+    { id: 'beranda',  icon: '⊞', label: 'Dashboard' },
+    { id: 'tagihan',  icon: '💳', label: 'Tagihan'   },
+    { id: 'manasik',  icon: '📅', label: 'Jadwal'    },
+    { id: 'datadiri', icon: '📝', label: 'Data Diri' },
+    { id: 'kiblat',   icon: '⚙️', label: 'Kiblat'    },
+  ];
 
-      {/* Tab Navigation */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
-        {tabs.map(t => (
-          <button key={t.id} className={`btn btn-sm ${tab === t.id ? 'btn-gold' : 'btn-outline'}`}
-            onClick={() => setTab(t.id)} style={{ fontSize: 13 }}>
-            {t.icon} {t.label}
+  /* ─ status badge label ─ */
+  const statusLabel = (s) => {
+    if (s === 'confirmed') return '✅ CONFIRMED';
+    if (s === 'pending')   return 'PENDING CONFIRMATION';
+    return (s || '').toUpperCase();
+  };
+
+  return (
+    <div className="jm-wrapper">
+
+      {/* ── MOBILE HEADER ── */}
+      <div className="jm-mobile-header">
+        <div className="jm-profile-row">
+          <div className="jm-avatar-lg">{user.nama?.charAt(0)?.toUpperCase()}</div>
+          <div className="jm-profile-info">
+            <div className="jm-user-name">{user.nama}</div>
+            <div className="jm-user-badge">✨ Jamaah Premium</div>
+          </div>
+          <div className="jm-header-actions">
+            <button className="jm-icon-btn" title="Notifikasi">🔔</button>
+            <button className="jm-icon-btn" title="Profil">👤</button>
+          </div>
+        </div>
+
+        {/* Saldo & Tagihan */}
+        <div className="jm-saldo-row">
+          <div className="jm-saldo-card">
+            <div className="jm-saldo-bar" style={{ background: 'var(--blue-400)' }} />
+            <div className="jm-saldo-label">TOTAL SALDO</div>
+            <div className="jm-saldo-value">{formatRp(totalDibayar)}</div>
+          </div>
+          <div className="jm-saldo-card">
+            <div className="jm-saldo-bar" style={{ background: 'var(--red-400)' }} />
+            <div className="jm-saldo-label">TOTAL TAGIHAN</div>
+            <div className="jm-saldo-value">{formatRp(totalTagihan)}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── ICON NAVIGATION ── */}
+      <div className="jm-icon-nav">
+        {iconTabs.map(t => (
+          <button
+            key={t.id}
+            className={`jm-nav-item${tab === t.id ? ' active' : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            <div className="jm-nav-icon">{t.icon}</div>
+            <div className="jm-nav-label">{t.label}</div>
           </button>
         ))}
       </div>
 
-      {/* Tab Content */}
+      {/* ── BERANDA CONTENT ── */}
       {tab === 'beranda' && (
-        <div>
-          <JadwalSholat />
-          <div className="grid-4" style={{ marginBottom: 32 }}>
-            {[
-              { icon: '📋', val: bookings.length, label: 'Total Booking', color: 'gold' },
-              { icon: '✅', val: bookings.filter(b => b.status === 'confirmed').length, label: 'Confirmed', color: 'emerald' },
-              { icon: '⏳', val: bookings.filter(b => ['pending', 'waiting_payment'].includes(b.status)).length, label: 'Menunggu', color: 'blue' },
-              { icon: '💰', val: formatRp(bookings.reduce((s, b) => s + Number(b.total_dibayar || 0), 0)), label: 'Total Dibayar', color: 'purple' },
-            ].map((s, i) => (
-              <div key={i} className="card stat-card"><div className={`stat-icon ${s.color}`}>{s.icon}</div>
-                <div><div className="stat-value" style={{ fontSize: s.color === 'purple' ? 18 : 28 }}>{s.val}</div><div className="stat-label">{s.label}</div></div></div>
-            ))}
-          </div>
-          {bookings.length === 0 ? (
-            <div className="empty-state"><div className="icon">📋</div><h3>Belum ada booking</h3><p>Kunjungi katalog untuk booking</p>
-              <a href="/katalog" className="btn btn-gold" style={{ marginTop: 16 }}>Lihat Katalog →</a></div>
+        <div className="jm-content">
+
+          {/* Package Hero Card */}
+          {mainBooking ? (
+            <div className="jm-package-card">
+              <div className="jm-package-img-wrap">
+                <img src="/makkah-hero.png" alt="Makkah" className="jm-package-img" />
+                <div className="jm-package-img-overlay">
+                  <span className={`jm-status-pill ${mainBooking.status}`}>
+                    {statusLabel(mainBooking.status)}
+                  </span>
+                  <div className="jm-package-name">
+                    {mainBooking.jadwal?.paket?.nama_paket || 'Paket Umroh'}
+                  </div>
+                </div>
+              </div>
+              <div className="jm-package-body">
+                <div className="jm-pkg-row">
+                  <span className="jm-pkg-icon">📅</span>
+                  <span className="jm-pkg-key">Keberangkatan</span>
+                  <span className="jm-pkg-val">{formatDate(mainBooking.jadwal?.tanggal_berangkat)}</span>
+                </div>
+                <div className="jm-progress-block">
+                  <div className="jm-prog-header">
+                    <span>Dokumen Jamaah</span>
+                    <span className={`jm-doc-badge ${mainBooking.status_dokumen}`}>
+                      {mainBooking.status_dokumen === 'valid'
+                        ? 'Lengkap'
+                        : mainBooking.status_dokumen === 'incomplete'
+                        ? 'Incomplete'
+                        : mainBooking.status_dokumen || '-'}
+                    </span>
+                  </div>
+                  <div className="jm-prog-track">
+                    <div
+                      className="jm-prog-fill"
+                      style={{
+                        width: `${docPct}%`,
+                        background: docPct === 100
+                          ? 'var(--emerald-500)'
+                          : docPct > 50
+                          ? 'var(--gold-400)'
+                          : 'var(--red-400)',
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="jm-progress-block">
+                  <div className="jm-prog-header">
+                    <span>Progress Pembayaran</span>
+                    <span>{payPct}%</span>
+                  </div>
+                  <div className="jm-prog-track">
+                    <div
+                      className="jm-prog-fill"
+                      style={{
+                        width: `${payPct}%`,
+                        background: payPct === 100
+                          ? 'var(--emerald-500)'
+                          : 'var(--gold-400)',
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
-            <div className="table-container card" style={{ padding: 0 }}>
-              <table><thead><tr><th>Kode</th><th>Paket</th><th>Berangkat</th><th>Status</th><th>Dokumen</th><th>Pembayaran</th><th>Perlengkapan</th></tr></thead>
-                <tbody>{bookings.map(b => (
-                  <tr key={b.id}>
-                    <td><strong style={{ color: 'var(--gold-400)' }}>{b.kode_booking}</strong></td>
-                    <td>{b.jadwal?.paket?.nama_paket || '-'}</td><td>{formatDate(b.jadwal?.tanggal_berangkat)}</td>
-                    <td><span className={badgeClass(b.status)}>{b.status}</span></td>
-                    <td><span className={badgeClass(b.status_dokumen)}>{b.status_dokumen}</span></td>
-                    <td>{formatRp(b.total_dibayar)} / {formatRp(b.total_harga)}</td>
-                    <td>{b.distribusi_perlengkapan?.filter(d => d.status_penyerahan === 'diserahkan').length || 0}/{b.distribusi_perlengkapan?.length || 0}</td>
-                  </tr>
-                ))}</tbody></table>
+            <div className="jm-empty-pkg">
+              <div style={{ fontSize: 52, marginBottom: 12 }}>🕋</div>
+              <h3>Belum ada booking</h3>
+              <p>Mulai perjalanan ibadah Anda</p>
+              <a href="/katalog" className="btn btn-gold" style={{ marginTop: 16 }}>Lihat Katalog →</a>
+            </div>
+          )}
+
+          {/* Stats Row */}
+          <div className="jm-stats-row">
+            <div className="jm-stat-item">
+              <div className="jm-stat-val">{bookings.length}</div>
+              <div className="jm-stat-lbl">TOTAL</div>
+            </div>
+            <div className="jm-stat-divider" />
+            <div className="jm-stat-item">
+              <div className="jm-stat-val" style={{ color: 'var(--emerald-400)' }}>
+                {bookings.filter(b => b.status === 'confirmed').length}
+              </div>
+              <div className="jm-stat-lbl">CONFIRMED</div>
+            </div>
+            <div className="jm-stat-divider" />
+            <div className="jm-stat-item">
+              <div className="jm-stat-val" style={{ color: 'var(--gold-300)' }}>
+                {bookings.filter(b => ['pending','waiting_payment'].includes(b.status)).length}
+              </div>
+              <div className="jm-stat-lbl">MENUNGGU</div>
+            </div>
+          </div>
+
+          {/* Prayer Schedule */}
+          <JadwalSholat />
+
+          {/* Desktop: booking table (hidden on mobile via CSS) */}
+          {bookings.length > 0 && (
+            <div className="jm-desktop-table">
+              <div className="table-container card" style={{ padding: 0 }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Kode</th><th>Paket</th><th>Berangkat</th>
+                      <th>Status</th><th>Dokumen</th><th>Pembayaran</th><th>Perlengkapan</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bookings.map(b => (
+                      <tr key={b.id}>
+                        <td><strong style={{ color: 'var(--gold-400)' }}>{b.kode_booking}</strong></td>
+                        <td>{b.jadwal?.paket?.nama_paket || '-'}</td>
+                        <td>{formatDate(b.jadwal?.tanggal_berangkat)}</td>
+                        <td><span className={badgeClass(b.status)}>{b.status}</span></td>
+                        <td><span className={badgeClass(b.status_dokumen)}>{b.status_dokumen}</span></td>
+                        <td>{formatRp(b.total_dibayar)} / {formatRp(b.total_harga)}</td>
+                        <td>{b.distribusi_perlengkapan?.filter(d => d.status_penyerahan === 'diserahkan').length || 0}/{b.distribusi_perlengkapan?.length || 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
       )}
-      {tab === 'tagihan' && <TagihanPanel bookings={bookings} showToast={showToast} onReload={load} />}
-      {tab === 'datadiri' && <DataDiriPanel user={user} showToast={showToast} onUpdate={load} />}
-      {tab === 'manasik' && <ManasikJamaahPanel bookings={bookings} />}
-      {tab === 'kiblat' && <KompasKiblatPanel />}
+
+      {tab === 'tagihan'  && <div className="jm-content"><TagihanPanel bookings={bookings} showToast={showToast} onReload={load} /></div>}
+      {tab === 'datadiri' && <div className="jm-content"><DataDiriPanel user={user} showToast={showToast} onUpdate={load} /></div>}
+      {tab === 'manasik'  && <div className="jm-content"><ManasikJamaahPanel bookings={bookings} /></div>}
+      {tab === 'kiblat'   && <div className="jm-content"><KompasKiblatPanel /></div>}
+
+      {/* ── MOBILE BOTTOM NAV ── */}
+      <div className="jm-bottom-nav">
+        {bottomNav.map(t => (
+          <button
+            key={t.id}
+            className={`jm-bottom-btn${tab === t.id ? ' active' : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            <span className="jm-bottom-icon">{t.icon}</span>
+            <span className="jm-bottom-label">{t.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── FAB CHAT ── */}
+      <button
+        className="jm-fab"
+        onClick={() => window.open('https://wa.me/6281234567890', '_blank')}
+        title="Chat Admin"
+      >
+        💬
+      </button>
     </div>
   );
 }
@@ -486,6 +663,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [activeMenu, setActiveMenu] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -493,7 +671,7 @@ export default function DashboardPage() {
     if (!u) { router.push('/login'); return; }
     setUser(u);
     // Set default menu
-    const defaults = { admin_travel: 'overview', admin_keuangan: 'overview', admin_perlengkapan: 'inventory', manager: 'pengajuan' };
+    const defaults = { admin_travel: 'overview', admin_keuangan: 'laporan', admin_perlengkapan: 'inventory', manager: 'pengajuan' };
     setActiveMenu(defaults[u.role] || '');
     setLoading(false);
   }, []);
@@ -545,13 +723,34 @@ export default function DashboardPage() {
     surat: <DokumenSuratPanel showToast={showToast} />,
   };
 
+  const menuLabels = {
+    overview:'Dashboard', paket:'Paket Umroh', jadwal:'Jadwal', dokumen:'Dokumen',
+    manasik:'Manasik', maskapai:'Maskapai', hotel:'Hotel', agent:'Agent', karyawan:'Karyawan',
+    mitra:'Mitra', layanan:'Layanan', akun:'Akun', register:'Daftar Jamaah', manifest:'Manifest',
+    surat:'Cetak Surat', pembayaran:'Pembayaran', pemasukan:'Pemasukan', pengeluaran:'Pengeluaran',
+    bonus:'Bonus Agent', laporan:'Laporan', inventory:'Inventory', distribusi:'Distribusi',
+    pengajuan:'Pengajuan', promo_banners:'Promo Banner', articles:'Blog/Artikel',
+  };
+
   return (
     <>
       <Navbar />
       {toast && <Toast key={toast.key} message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="dashboard-layout">
-        <Sidebar role={user?.role} activeMenu={activeMenu} onMenuChange={setActiveMenu} />
+        <Sidebar
+          role={user?.role}
+          activeMenu={activeMenu}
+          onMenuChange={(id) => { setActiveMenu(id); setSidebarOpen(false); }}
+          mobileOpen={sidebarOpen}
+          onMobileClose={() => setSidebarOpen(false)}
+        />
         <div className="main-content">
+          {/* Mobile admin top bar */}
+          <div className="admin-mob-bar">
+            <button className="admin-mob-ham" onClick={() => setSidebarOpen(true)}>
+              ☰ <span>{menuLabels[activeMenu] || 'Menu'}</span>
+            </button>
+          </div>
           {adminPanels[activeMenu] || <div className="empty-state"><h3>Pilih menu di sidebar</h3></div>}
         </div>
       </div>
