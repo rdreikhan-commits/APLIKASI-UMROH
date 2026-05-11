@@ -164,10 +164,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Stok Log / Edit Stok
         Route::post('/master/{id}/log', [EquipmentController::class, 'storeLog']);
         
-        // Pengajuan Perlengkapan
-        Route::get('/pengajuan', [EquipmentController::class, 'pengajuanIndex']);
-        Route::post('/pengajuan', [EquipmentController::class, 'pengajuanStore']);
-        Route::put('/pengajuan/{id}/status', [EquipmentController::class, 'pengajuanUpdateStatus']);
+        // Pengajuan perlengkapan dipindah ke multi-role di bawah
 
         // Distribusi Perlengkapan
         Route::get('/distribusi', [EquipmentController::class, 'distribusiList']);
@@ -178,6 +175,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Laporan Stok
         Route::get('/laporan/stok', [EquipmentController::class, 'laporanStok']);
+    });
+
+    // ═════════════════════════════════════════
+    // PENGAJUAN PERLENGKAPAN (Multi-role)
+    // ═════════════════════════════════════════
+    Route::prefix('admin/perlengkapan/pengajuan')->middleware('role:admin_perlengkapan,admin_keuangan,manager')->group(function () {
+        Route::get('/', [EquipmentController::class, 'pengajuanIndex']);
+        Route::post('/', [EquipmentController::class, 'pengajuanStore']);
+        Route::put('/{id}/status', [EquipmentController::class, 'pengajuanUpdateStatus']);
     });
 
     // ═════════════════════════════════════════

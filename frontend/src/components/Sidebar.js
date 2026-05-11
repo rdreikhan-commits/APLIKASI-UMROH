@@ -36,6 +36,7 @@ export default function Sidebar({ role, activeMenu, onMenuChange, mobileOpen, on
     { id: 'laporan', icon: '📊', label: 'Dashboard Keuangan' },
     { section: 'Transaksi' },
     { id: 'pembayaran', icon: '💳', label: 'Verifikasi Pembayaran' },
+    { id: 'pengajuan', icon: '📋', label: 'Pencairan Pengajuan' },
     { section: 'Catatan Keuangan' },
     { id: 'pemasukan', icon: '📈', label: 'Pemasukan' },
     { id: 'pengeluaran', icon: '📉', label: 'Pengeluaran' },
