@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Toast from '@/components/Toast';
@@ -8,7 +8,8 @@ import api from '@/lib/api';
 const formatRp = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
 
-export default function KatalogPage() {
+// ── Inner component that uses useSearchParams ──
+function KatalogContent() {
   const [jadwal, setJadwal] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -37,7 +38,6 @@ export default function KatalogPage() {
 
   return (
     <>
-      <Navbar />
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="page-container">
         <div className="page-header">
@@ -52,69 +52,82 @@ export default function KatalogPage() {
         ) : (
           <div className="grid-2">
             {jadwal.map(j => {
-              const defaultImage = j.paket?.tipe === 'vip' ? 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&q=80&w=800' : 'https://images.unsplash.com/photo-1591414443217-062254e4f5fc?auto=format&fit=crop&q=80&w=800';
+              const defaultImage = j.paket?.tipe === 'vip'
+                ? 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&q=80&w=800'
+                : 'https://images.unsplash.com/photo-1591414443217-062254e4f5fc?auto=format&fit=crop&q=80&w=800';
               const imageUrl = j.paket?.gambar_path ? `http://127.0.0.1:8000${j.paket.gambar_path}` : defaultImage;
 
               return (
-              <div key={j.id} className="card card-gold" style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '20px' }}>
-                
-                {/* Gambar Paket */}
-                <div style={{
-                  width: '100%',
-                  height: '220px',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  marginBottom: '8px',
-                  backgroundColor: '#2a2a2a'
-                }}>
-                  <img src={imageUrl} alt={j.paket?.nama_paket} style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }} />
-                </div>
+                <div key={j.id} className="card card-gold" style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '20px' }}>
 
-                <div className="flex-between">
-                  <div>
-                    <div style={{ fontSize: 12, color: 'var(--gold-400)', fontWeight: 600 }}>{j.kode_jadwal}</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, marginTop: 4 }}>{j.paket?.nama_paket}</div>
+                  {/* Gambar Paket */}
+                  <div style={{ width: '100%', height: '220px', borderRadius: '12px', overflow: 'hidden', marginBottom: '8px', backgroundColor: '#2a2a2a' }}>
+                    <img src={imageUrl} alt={j.paket?.nama_paket} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
-                  <span className="badge" style={{
-                    background: j.paket?.tipe === 'vip' ? 'rgba(251,191,36,0.15)' : 'rgba(96,165,250,0.15)',
-                    color: j.paket?.tipe === 'vip' ? 'var(--gold-300)' : 'var(--blue-400)',
-                  }}>{(j.paket?.tipe || 'reguler').toUpperCase()}</span>
-                </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
-                  <div>📅 Berangkat<br /><strong style={{ color: 'var(--text-primary)' }}>{formatDate(j.tanggal_berangkat)}</strong></div>
-                  <div>📅 Pulang<br /><strong style={{ color: 'var(--text-primary)' }}>{formatDate(j.tanggal_pulang)}</strong></div>
-                  <div>🏙️ Dari<br /><strong style={{ color: 'var(--text-primary)' }}>{j.kota_keberangkatan}</strong></div>
-                  <div>⏱️ Durasi<br /><strong style={{ color: 'var(--text-primary)' }}>{j.paket?.durasi_hari} Hari</strong></div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: '1px solid var(--border-default)' }}>
-                  <div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Harga</div>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--gold-400)' }}>{formatRp(j.paket?.harga)}</div>
+                  <div className="flex-between">
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--gold-400)', fontWeight: 600 }}>{j.kode_jadwal}</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, marginTop: 4 }}>{j.paket?.nama_paket}</div>
+                    </div>
+                    <span className="badge" style={{
+                      background: j.paket?.tipe === 'vip' ? 'rgba(251,191,36,0.15)' : 'rgba(96,165,250,0.15)',
+                      color: j.paket?.tipe === 'vip' ? 'var(--gold-300)' : 'var(--blue-400)',
+                    }}>{(j.paket?.tipe || 'reguler').toUpperCase()}</span>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Sisa Kuota</div>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: j.sisa_kuota > 10 ? 'var(--emerald-400)' : 'var(--red-400)' }}>
-                      {j.sisa_kuota}<span style={{ fontSize: 13, fontWeight: 400 }}>/{j.kuota_total}</span>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
+                    <div>📅 Berangkat<br /><strong style={{ color: 'var(--text-primary)' }}>{formatDate(j.tanggal_berangkat)}</strong></div>
+                    <div>📅 Pulang<br /><strong style={{ color: 'var(--text-primary)' }}>{formatDate(j.tanggal_pulang)}</strong></div>
+                    <div>🏙️ Dari<br /><strong style={{ color: 'var(--text-primary)' }}>{j.kota_keberangkatan}</strong></div>
+                    <div>⏱️ Durasi<br /><strong style={{ color: 'var(--text-primary)' }}>{j.paket?.durasi_hari} Hari</strong></div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: '1px solid var(--border-default)' }}>
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Harga</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--gold-400)' }}>{formatRp(j.paket?.harga)}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Sisa Kuota</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: j.sisa_kuota > 10 ? 'var(--emerald-400)' : 'var(--red-400)' }}>
+                        {j.sisa_kuota}<span style={{ fontSize: 13, fontWeight: 400 }}>/{j.kuota_total}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <button className="btn btn-gold" style={{ width: '100%' }} disabled={j.sisa_kuota <= 0 || booking}
-                  onClick={() => handleBooking(j.id)}>
-                  {j.sisa_kuota <= 0 ? 'Kuota Habis' : booking ? '⏳ Proses...' : '🕌 Booking Sekarang →'}
-                </button>
-              </div>
+                  <button className="btn btn-gold" style={{ width: '100%' }} disabled={j.sisa_kuota <= 0 || booking}
+                    onClick={() => handleBooking(j.id)}>
+                    {j.sisa_kuota <= 0 ? 'Kuota Habis' : booking ? '⏳ Proses...' : '🕌 Booking Sekarang →'}
+                  </button>
+                </div>
               );
             })}
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+// ── Fallback saat Suspense loading ──
+function KatalogFallback() {
+  return (
+    <div className="loading-page" style={{ minHeight: '60vh' }}>
+      <div className="spinner" />
+      <span>Memuat katalog...</span>
+    </div>
+  );
+}
+
+// ── Main export: wrap with Suspense (required by Next.js for useSearchParams) ──
+export default function KatalogPage() {
+  return (
+    <>
+      <Navbar />
+      <Suspense fallback={<KatalogFallback />}>
+        <KatalogContent />
+      </Suspense>
     </>
   );
 }
